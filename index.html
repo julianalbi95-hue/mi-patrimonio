@@ -11,22 +11,18 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>Mi Patrimonio</title>
 <style>
-:root{--green:#173c34;--mint:#dcefe7;--bg:#f4f6f5;--card:#fff;--ink:#17211e;--muted:#68756f;--red:#b44343;--line:#e5eae7}
+:root{--green:#173c34;--mint:#dcefe7;--bg:#f4f6f5;--card:#fff;--ink:#17211e;--muted:#68756f;--red:#b44343;--line:#e5eae7;--blue:#4787bd;--orange:#d69a43;--purple:#9274bb}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding-bottom:calc(78px + env(safe-area-inset-bottom))}
-header{background:var(--green);color:white;padding:calc(18px + env(safe-area-inset-top)) 18px 18px;position:sticky;top:0;z-index:5}
-header .top{display:flex;align-items:center;justify-content:space-between}h1{font-size:20px;margin:0}header small{opacity:.75}
-main{max-width:720px;margin:auto;padding:16px}.panel{background:var(--card);border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 2px 10px #14271c0a}
-.hero{background:var(--green);color:white}.hero small{opacity:.75}.big{font-size:32px;font-weight:750;margin:7px 0}.muted{color:var(--muted)}.hero .muted{color:#d2e0da}
+header{background:var(--green);color:white;padding:calc(18px + env(safe-area-inset-top)) 18px 18px;position:sticky;top:0;z-index:5}.top{display:flex;align-items:center;justify-content:space-between}h1{font-size:20px;margin:0}header small{opacity:.75}
+main{max-width:760px;margin:auto;padding:16px}.panel{background:var(--card);border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 2px 10px #14271c0a}.hero{background:var(--green);color:white}.hero small{opacity:.75}.big{font-size:30px;font-weight:750;margin:7px 0}.muted{color:var(--muted)}.hero .muted{color:#d2e0da}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.metric{background:#f7f9f8;border-radius:13px;padding:12px}.metric b{display:block;font-size:19px;margin-top:5px}
 h2{font-size:18px;margin:4px 0 12px}.row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}.row:last-child{border:0}.row strong{display:block}.row small{color:var(--muted)}
 nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:8px 4px calc(8px + env(safe-area-inset-bottom));z-index:10}
 nav button{border:0;background:none;color:var(--muted);font-size:11px;padding:5px 7px;display:flex;flex-direction:column;align-items:center;gap:3px}nav button.active{color:var(--green);font-weight:700}nav span{font-size:19px}
 button,.btn{border:0;border-radius:12px;background:var(--green);color:white;padding:12px 14px;font-weight:650;font-size:14px;cursor:pointer}.secondary{background:var(--mint);color:var(--green)}.danger{background:#fae8e8;color:var(--red)}.smallbtn{padding:7px 10px;font-size:12px}
-input,select{width:100%;padding:12px;border:1px solid #d8e0dc;border-radius:11px;background:white;font:inherit;color:var(--ink);margin:5px 0 12px}label{font-size:13px;font-weight:650;color:#46534d}
-form{margin-top:10px}.tabs{display:flex;gap:8px;margin-bottom:12px}.tabs button{flex:1}.progress{height:10px;background:#e8eeeb;border-radius:99px;overflow:hidden}.progress i{display:block;height:100%;background:#26966b}
-.tag{font-size:11px;border-radius:20px;background:#edf3f0;padding:4px 8px;color:var(--green)}
-.amount-in{color:#16804f}.amount-out{color:var(--red)}.empty{text-align:center;padding:24px;color:var(--muted)}
-.note{font-size:12px;color:var(--muted);line-height:1.45}.hidden{display:none!important}
+input,select{width:100%;padding:12px;border:1px solid #d8e0dc;border-radius:11px;background:white;font:inherit;color:var(--ink);margin:5px 0 12px}label{font-size:13px;font-weight:650;color:#46534d}form{margin-top:10px}
+.tag{font-size:11px;border-radius:20px;background:#edf3f0;padding:4px 8px;color:var(--green)}.amount-in{color:#16804f}.amount-out{color:var(--red)}.empty{text-align:center;padding:24px;color:var(--muted)}.note{font-size:12px;color:var(--muted);line-height:1.45}.hidden{display:none!important}
+.bar{height:10px;background:#e8eeeb;border-radius:99px;overflow:hidden;flex:1}.bar i{display:block;height:100%;border-radius:99px}.statline{display:flex;align-items:center;gap:9px;margin:12px 0}.statline .name{width:105px;font-size:13px;overflow-wrap:anywhere}.statline .value{width:82px;text-align:right;font-size:13px;font-weight:650}.tabs{display:flex;gap:8px;margin-bottom:12px}.tabs button{flex:1}.pillactive{background:var(--green);color:#fff}.pillidle{background:var(--mint);color:var(--green)}
 </style>
 </head>
 <body>
@@ -42,75 +38,103 @@ form{margin-top:10px}.tabs{display:flex;gap:8px;margin-bottom:12px}.tabs button{
 <script>
 const KEY='miPatrimonio_v1';
 const initial={accounts:[
-{id:1,name:'Trade Republic · Ahorro',type:'Ahorro',balance:7800},
-{id:2,name:'Revolut · Cuenta conjunta',type:'Ahorro',balance:1800},
-{id:3,name:'imaginBank · Personal',type:'Cuenta',balance:0},
-{id:4,name:'imaginBank · Casa',type:'Cuenta',balance:0},
-{id:5,name:'Fondo S&P 500',type:'Inversión',balance:2580},
-{id:6,name:'Criptomonedas',type:'Inversión',balance:0}],
+{id:1,name:'Trade Republic · Ahorro',type:'Ahorro',group:'personal',balance:7800},
+{id:2,name:'Revolut · Cuenta conjunta',type:'Ahorro',group:'conjunta',balance:1800},
+{id:3,name:'imaginBank · Personal',type:'Cuenta',group:'personal',balance:0},
+{id:4,name:'imaginBank · Casa',type:'Cuenta',group:'conjunta',balance:0},
+{id:5,name:'Fondo S&P 500',type:'Inversión',group:'personal',balance:2580},
+{id:6,name:'Criptomonedas',type:'Inversión',group:'personal',balance:0}],
 moves:[],goals:[{id:1,name:'Colchón de seguridad',target:20000,current:0}],budgets:[],incomeTarget:3670};
-let data;try{data=JSON.parse(localStorage.getItem(KEY))||initial}catch{data=initial}
-let tab='home';
+function migrate(raw){
+const d=raw&&typeof raw==='object'?raw:structuredClone(initial);
+d.accounts=Array.isArray(d.accounts)?d.accounts:[];
+d.moves=Array.isArray(d.moves)?d.moves:[];
+d.goals=Array.isArray(d.goals)?d.goals:[];
+d.accounts.forEach(a=>{if(!a.group)a.group=/conjunta|casa|revolut/i.test(a.name)?'conjunta':'personal'});
+d.moves.forEach(m=>{
+if(!m.group){const a=d.accounts.find(x=>x.id===m.account);m.group=a?.group||'personal'}
+if(!m.date)m.date=new Date().toLocaleDateString('es-ES');
+if(!m.month){const p=m.date.split('/');m.month=p.length===3?p[2]+'-'+p[1].padStart(2,'0'):new Date().toISOString().slice(0,7)}
+});
+return d;
+}
+let data;try{data=migrate(JSON.parse(localStorage.getItem(KEY))||structuredClone(initial))}catch{data=structuredClone(initial)}
+let tab='home',statsGroup='all';
 const eur=n=>Number(n||0).toLocaleString('es-ES',{style:'currency',currency:'EUR'});
 const save=()=>localStorage.setItem(KEY,JSON.stringify(data));
 const total=()=>data.accounts.reduce((s,a)=>s+Number(a.balance||0),0);
+const groupTotal=g=>data.accounts.filter(a=>a.group===g).reduce((s,a)=>s+Number(a.balance||0),0);
 const sumType=t=>data.accounts.filter(a=>a.type===t).reduce((s,a)=>s+Number(a.balance||0),0);
-const monthMoves=()=>data.moves.filter(m=>m.month===new Date().toISOString().slice(0,7));
-const sums=()=>{let ms=monthMoves();return {in:ms.filter(m=>m.kind==='Ingreso').reduce((s,m)=>s+m.amount,0),out:ms.filter(m=>m.kind==='Gasto').reduce((s,m)=>s+m.amount,0)}};
+const currentMonth=()=>new Date().toISOString().slice(0,7);
+const monthMoves=(g='all',month=currentMonth())=>data.moves.filter(m=>m.month===month&&(g==='all'||(m.group||'personal')===g));
+const sums=(g='all',month=currentMonth())=>{let ms=monthMoves(g,month);return {in:ms.filter(m=>m.kind==='Ingreso').reduce((s,m)=>s+Number(m.amount),0),out:ms.filter(m=>m.kind==='Gasto').reduce((s,m)=>s+Number(m.amount),0)}};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const groupName=g=>g==='conjunta'?'Conjunta':'Personal';
+function goalMarkup(g){if(!g)return 'Aún no tienes objetivos.';return '<strong>'+esc(g.name)+'</strong><div class="big" style="font-size:24px">'+eur(g.current)+' / '+eur(g.target)+'</div><div class="bar"><i style="width:'+Math.min(100,g.current/Math.max(1,g.target)*100)+'%;background:#26966b"></i></div>'}
+function categoryStats(moves){
+const map={};moves.filter(m=>m.kind==='Gasto').forEach(m=>map[m.category]=(map[m.category]||0)+Number(m.amount));
+return Object.entries(map).sort((a,b)=>b[1]-a[1]);
+}
 function render(){
 document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
 const app=document.getElementById('app');
 if(tab==='home'){
-let s=sums();
-app.innerHTML=`<section class="panel hero"><small>Patrimonio total</small><div class="big">${eur(total())}</div><div class="muted">Saldos de cuentas e inversiones</div><div class="grid" style="margin-top:16px"><div><small>Dinero en cuentas</small><b>${eur(sumType('Ahorro')+sumType('Cuenta'))}</b></div><div><small>Inversiones</small><b>${eur(sumType('Inversión'))}</b></div></div></section>
-<section class="grid"><div class="panel metric"><small class="muted">Ingresos este mes</small><b class="amount-in">${eur(s.in)}</b></div><div class="panel metric"><small class="muted">Gastos este mes</small><b class="amount-out">${eur(s.out)}</b></div></section>
-<section class="panel"><h2>Balance mensual registrado</h2><div class="big" style="font-size:25px">${eur(s.in-s.out)}</div><small class="muted">Solo incluye movimientos que hayas registrado este mes.</small></section>
-<section class="panel"><h2>Mis cuentas</h2>${data.accounts.map(a=>`<div class="row"><div><strong>${esc(a.name)}</strong><small>${esc(a.type)}</small></div><b>${eur(a.balance)}</b></div>`).join('')||'<div class="empty">Añade tu primera cuenta.</div>'}</section>
-<section class="panel"><h2>Objetivo principal</h2>${goalMarkup(data.goals[0])}</section>`;
+const s=sums(),sp=sums('personal'),sc=sums('conjunta');
+app.innerHTML='<section class="panel hero"><small>Patrimonio total</small><div class="big">'+eur(total())+'</div><div class="muted">Saldos de cuentas e inversiones</div><div class="grid" style="margin-top:16px"><div><small>Personal</small><b>'+eur(groupTotal('personal'))+'</b></div><div><small>Conjunta</small><b>'+eur(groupTotal('conjunta'))+'</b></div></div></section>'+
+'<section class="grid"><div class="panel metric"><small class="muted">Ingresos este mes</small><b class="amount-in">'+eur(s.in)+'</b></div><div class="panel metric"><small class="muted">Gastos este mes</small><b class="amount-out">'+eur(s.out)+'</b></div></section>'+
+'<section class="panel"><h2>Ahorro registrado este mes</h2><div class="big" style="font-size:25px">'+eur(s.in-s.out)+'</div><div class="row"><span>Personal</span><b>'+eur(sp.in-sp.out)+'</b></div><div class="row"><span>Conjunta</span><b>'+eur(sc.in-sc.out)+'</b></div><small class="muted">Calculado con los ingresos y gastos que registres.</small></section>'+
+'<section class="panel"><h2>Mis cuentas</h2>'+data.accounts.map(a=>'<div class="row"><div><strong>'+esc(a.name)+'</strong><small>'+groupName(a.group)+' · '+esc(a.type)+'</small></div><b>'+eur(a.balance)+'</b></div>').join('')+'</section>'+
+'<section class="panel"><h2>Objetivo principal</h2>'+goalMarkup(data.goals[0])+'</section>';
 }else if(tab==='moves'){
-app.innerHTML=`<section class="panel"><h2>Registrar movimiento</h2><form id="moveForm">
-<label>Tipo</label><select name="kind"><option>Gasto</option><option>Ingreso</option><option>Transferencia</option></select>
-<label>Concepto</label><input name="name" placeholder="Ej. Compra supermercado" required>
-<label>Importe (€)</label><input name="amount" type="number" min="0.01" step="0.01" required>
-<label>Categoría</label><select name="category">${['Alimentación','Vivienda','Transporte','Ocio','Compras','Suministros','Salud','Nómina','Ahorro','Inversiones','Otros'].map(x=>`<option>${x}</option>`).join('')}</select>
-<label>Cuenta</label><select name="account">${data.accounts.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('')}</select>
-<div id="transferToWrap" class="hidden"><label>Cuenta de destino</label><select name="toAccount">${data.accounts.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('')}</select></div>
-<button style="width:100%">Guardar movimiento</button></form></section>
-<section class="panel"><h2>Historial</h2>${data.moves.slice().reverse().map(m=>`<div class="row"><div><strong>${esc(m.name)}</strong><small>${m.date} · ${esc(m.category)}${m.kind==='Transferencia'?' · Transferencia':''}</small></div><div style="text-align:right"><b class="${m.kind==='Ingreso'?'amount-in':m.kind==='Gasto'?'amount-out':''}">${m.kind==='Gasto'?'−':m.kind==='Ingreso'?'+':''}${eur(m.amount)}</b><br><button class="smallbtn danger" data-delete-move="${m.id}">Borrar</button></div></div>`).join('')||'<div class="empty">Todavía no hay movimientos registrados.</div>'}</section>`;
-const f=document.getElementById('moveForm');f.kind.addEventListener('change',()=>document.getElementById('transferToWrap').classList.toggle('hidden',f.kind.value!=='Transferencia'));
-f.addEventListener('submit',e=>{e.preventDefault();let fd=new FormData(f),amt=Number(fd.get('amount')),kind=fd.get('kind'),a=data.accounts.find(x=>x.id===Number(fd.get('account'))),to=data.accounts.find(x=>x.id===Number(fd.get('toAccount')));if(!a||!amt)return;if(kind==='Transferencia'){if(!to||to.id===a.id)return alert('Elige una cuenta de destino diferente.');a.balance-=amt;to.balance+=amt;}else if(kind==='Gasto')a.balance-=amt;else a.balance+=amt;
-data.moves.push({id:Date.now(),name:fd.get('name'),amount:amt,kind,category:fd.get('category'),account:a.id,date:new Date().toLocaleDateString('es-ES'),month:new Date().toISOString().slice(0,7)});save();render();});
+const accts=data.accounts;
+app.innerHTML='<section class="panel"><h2>Registrar movimiento</h2><form id="moveForm">'+
+'<label>Tipo</label><select name="kind"><option>Gasto</option><option>Ingreso</option><option>Transferencia</option></select>'+
+'<label>Concepto</label><input name="name" placeholder="Ej. Compra supermercado" required>'+
+'<label>Importe (€)</label><input name="amount" type="number" min="0.01" step="0.01" required>'+
+'<label>Categoría</label><select name="category">'+['Alimentación','Vivienda','Transporte','Ocio','Restaurantes','Compras','Suministros','Salud','Suscripciones','Viajes','Nómina','Ahorro','Inversiones','Otros'].map(x=>'<option>'+x+'</option>').join('')+'</select>'+
+'<label>Cuenta</label><select name="group" id="moveGroup"><option value="personal">Personal</option><option value="conjunta">Conjunta</option></select>'+
+'<label>Cuenta bancaria o activo</label><select name="account" id="moveAccount">'+accts.map(a=>'<option value="'+a.id+'">'+esc(a.name)+'</option>').join('')+'</select>'+
+'<div id="transferToWrap" class="hidden"><label>Cuenta de destino</label><select name="toAccount" id="toAccount">'+accts.map(a=>'<option value="'+a.id+'">'+esc(a.name)+'</option>').join('')+'</select></div>'+
+'<label>Fecha</label><input name="date" type="date" value="'+new Date().toISOString().slice(0,10)+'" required>'+
+'<button style="width:100%">Guardar movimiento</button></form></section>'+
+'<section class="panel"><h2>Historial de movimientos</h2><div class="tabs"><button class="pillactive" data-filter="all">Todos</button><button class="pillidle" data-filter="personal">Personal</button><button class="pillidle" data-filter="conjunta">Conjunta</button></div><div id="history">'+historyMarkup('all')+'</div></section>';
+const f=document.getElementById('moveForm'),group=document.getElementById('moveGroup'),account=document.getElementById('moveAccount'),to=document.getElementById('toAccount');
+function filterAccounts(){const list=accts.filter(a=>a.group===group.value);account.innerHTML=list.map(a=>'<option value="'+a.id+'">'+esc(a.name)+'</option>').join('');to.innerHTML=accts.map(a=>'<option value="'+a.id+'">'+esc(a.name)+'</option>').join('')}
+group.addEventListener('change',filterAccounts);f.kind.addEventListener('change',()=>document.getElementById('transferToWrap').classList.toggle('hidden',f.kind.value!=='Transferencia'));
+f.addEventListener('submit',e=>{e.preventDefault();const fd=new FormData(f),amt=Number(fd.get('amount')),kind=fd.get('kind'),g=fd.get('group'),a=data.accounts.find(x=>x.id===Number(fd.get('account'))),dest=data.accounts.find(x=>x.id===Number(fd.get('toAccount')));if(!a||!amt||amt<=0)return;if(kind==='Transferencia'){if(!dest||dest.id===a.id)return alert('Elige una cuenta de destino diferente.');a.balance-=amt;dest.balance+=amt}else if(kind==='Gasto')a.balance-=amt;else a.balance+=amt;
+const date=fd.get('date'),month=date.slice(0,7);data.moves.push({id:Date.now(),name:fd.get('name').trim(),amount:amt,kind,category:fd.get('category'),account:a.id,toAccount:kind==='Transferencia'?dest.id:null,group:g,date:new Date(date+'T12:00:00').toLocaleDateString('es-ES'),month});save();render()});
+document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-filter]').forEach(x=>{x.className=x===b?'pillactive':'pillidle'});document.getElementById('history').innerHTML=historyMarkup(b.dataset.filter);wireHistory()});wireHistory();
 }else if(tab==='accounts'){
-app.innerHTML=`<section class="panel"><h2>Cuentas y activos</h2><p class="note">Introduce el saldo actual de cada cuenta o inversión. Puedes corregirlo cuando quieras.</p>${data.accounts.map(a=>`<div class="row"><div style="flex:1"><strong>${esc(a.name)}</strong><small>${esc(a.type)}</small></div><div style="width:115px"><input aria-label="Saldo ${esc(a.name)}" type="number" step=".01" data-balance="${a.id}" value="${a.balance}" style="margin:0"></div><button class="smallbtn danger" data-delete-account="${a.id}">×</button></div>`).join('')}</section>
-<section class="panel"><h2>Añadir cuenta o inversión</h2><form id="accountForm"><label>Nombre</label><input name="name" placeholder="Ej. Cuenta nómina" required><label>Tipo</label><select name="type"><option>Cuenta</option><option>Ahorro</option><option>Inversión</option><option>Deuda</option></select><label>Saldo actual (€)</label><input name="balance" type="number" step=".01" value="0"><button style="width:100%">Añadir</button></form><p class="note">Los saldos negativos pueden utilizarse para reflejar deudas.</p></section><section class="panel"><h2>Patrimonio total</h2><div class="big">${eur(total())}</div></section>`;
-document.querySelectorAll('[data-balance]').forEach(i=>i.addEventListener('change',()=>{let a=data.accounts.find(x=>x.id===Number(i.dataset.balance));a.balance=Number(i.value)||0;save();render()}));
-document.getElementById('accountForm').addEventListener('submit',e=>{e.preventDefault();let f=new FormData(e.target);data.accounts.push({id:Date.now(),name:f.get('name'),type:f.get('type'),balance:Number(f.get('balance'))||0});save();render()});
+app.innerHTML='<section class="panel"><h2>Cuentas personales y conjuntas</h2><p class="note">Asigna cada cuenta a Personal o Conjunta. Los saldos existentes se conservan.</p>'+data.accounts.map(a=>'<div class="row"><div style="flex:1"><strong>'+esc(a.name)+'</strong><small>'+esc(a.type)+' · '+groupName(a.group)+'</small></div><div style="width:112px"><input aria-label="Saldo '+esc(a.name)+'" type="number" step=".01" data-balance="'+a.id+'" value="'+a.balance+'" style="margin:0"></div></div>').join('')+'</section>'+
+'<section class="panel"><h2>Añadir cuenta</h2><form id="accountForm"><label>Nombre</label><input name="name" placeholder="Ej. Cuenta nómina" required><label>Tipo</label><select name="type"><option>Cuenta</option><option>Ahorro</option><option>Inversión</option><option>Deuda</option></select><label>Grupo</label><select name="group"><option value="personal">Personal</option><option value="conjunta">Conjunta</option></select><label>Saldo actual (€)</label><input name="balance" type="number" step=".01" value="0"><button style="width:100%">Añadir cuenta</button></form></section>'+
+'<section class="grid"><div class="panel metric"><small>Personal</small><b>'+eur(groupTotal('personal'))+'</b></div><div class="panel metric"><small>Conjunta</small><b>'+eur(groupTotal('conjunta'))+'</b></div></section>';
+document.querySelectorAll('[data-balance]').forEach(i=>i.onchange=()=>{let a=data.accounts.find(x=>x.id===Number(i.dataset.balance));a.balance=Number(i.value)||0;save();render()});
+document.getElementById('accountForm').onsubmit=e=>{e.preventDefault();let f=new FormData(e.target);data.accounts.push({id:Date.now(),name:f.get('name'),type:f.get('type'),group:f.get('group'),balance:Number(f.get('balance'))||0});save();render()};
 }else if(tab==='goals'){
-app.innerHTML=`<section class="panel"><h2>Mis objetivos de ahorro</h2>${data.goals.map(g=>`<div style="margin:14px 0"><strong>${esc(g.name)}</strong><div class="big" style="font-size:24px">${eur(g.current)} <small class="muted" style="font-size:14px">/ ${eur(g.target)}</small></div><div class="progress"><i style="width:${Math.min(100,g.current/Math.max(1,g.target)*100)}%"></i></div><small class="muted">${Math.round(Math.min(100,g.current/Math.max(1,g.target)*100))}% completado · Faltan ${eur(Math.max(0,g.target-g.current))}</small><div style="display:flex;gap:8px;margin-top:8px"><button class="secondary smallbtn" data-goal-edit="${g.id}">Editar</button><button class="danger smallbtn" data-goal-delete="${g.id}">Eliminar</button></div></div>`).join('')||'<div class="empty">Crea un objetivo de ahorro.</div>'}</section>
-<section class="panel"><h2>Crear objetivo</h2><form id="goalForm"><label>Nombre</label><input name="name" placeholder="Ej. Viaje, coche, colchón..." required><label>Importe objetivo (€)</label><input name="target" type="number" min="1" required><label>Ahorrado actualmente (€)</label><input name="current" type="number" min="0" value="0"><button style="width:100%">Crear objetivo</button></form></section>`;
-document.getElementById('goalForm').addEventListener('submit',e=>{e.preventDefault();let f=new FormData(e.target);data.goals.push({id:Date.now(),name:f.get('name'),target:Number(f.get('target')),current:Number(f.get('current'))||0});save();render()});
-document.querySelectorAll('[data-goal-edit]').forEach(b=>b.onclick=()=>{let g=data.goals.find(x=>x.id===Number(b.dataset.goalEdit));let n=prompt('Nombre del objetivo',g.name);if(n===null)return;let t=prompt('Objetivo en euros',g.target);if(t===null)return;let c=prompt('Cantidad acumulada',g.current);if(c===null)return;g.name=n;g.target=Number(t)||g.target;g.current=Number(c)||0;save();render()});
+app.innerHTML='<section class="panel"><h2>Mis objetivos de ahorro</h2>'+data.goals.map(g=>'<div style="margin:14px 0"><strong>'+esc(g.name)+'</strong><div class="big" style="font-size:24px">'+eur(g.current)+' <small class="muted" style="font-size:14px">/ '+eur(g.target)+'</small></div><div class="bar"><i style="width:'+Math.min(100,g.current/Math.max(1,g.target)*100)+'%;background:#26966b"></i></div><small class="muted">'+Math.round(Math.min(100,g.current/Math.max(1,g.target)*100))+'% completado · Faltan '+eur(Math.max(0,g.target-g.current))+'</small><div style="display:flex;gap:8px;margin-top:8px"><button class="secondary smallbtn" data-goal-edit="'+g.id+'">Editar</button><button class="danger smallbtn" data-goal-delete="'+g.id+'">Eliminar</button></div></div>').join('')||'<div class="empty">Crea un objetivo de ahorro.</div>'+'</section>'+
+'<section class="panel"><h2>Crear objetivo</h2><form id="goalForm"><label>Nombre</label><input name="name" required><label>Importe objetivo (€)</label><input name="target" type="number" min="1" required><label>Ahorrado actualmente (€)</label><input name="current" type="number" min="0" value="0"><button style="width:100%">Crear objetivo</button></form></section>';
+document.getElementById('goalForm').onsubmit=e=>{e.preventDefault();let f=new FormData(e.target);data.goals.push({id:Date.now(),name:f.get('name'),target:Number(f.get('target')),current:Number(f.get('current'))||0});save();render()};
+document.querySelectorAll('[data-goal-edit]').forEach(b=>b.onclick=()=>{let g=data.goals.find(x=>x.id===Number(b.dataset.goalEdit)),n=prompt('Nombre',g.name),t=prompt('Objetivo en euros',g.target),c=prompt('Cantidad acumulada',g.current);if(n===null||t===null||c===null)return;g.name=n;g.target=Number(t)||g.target;g.current=Number(c)||0;save();render()});
 }else{
-let s=sums(),inv=sumType('Inversión'),liquid=sumType('Ahorro')+sumType('Cuenta');
-app.innerHTML=`<section class="panel"><h2>Distribución del patrimonio</h2>${[['Dinero en cuentas',liquid],['Inversiones',inv],['Deudas',sumType('Deuda')]].map(([n,v])=>`<div style="margin:14px 0"><div class="row" style="border:0;padding:0"><span>${n}</span><b>${eur(v)}</b></div><div class="progress"><i style="width:${Math.min(100,Math.abs(v)/Math.max(1,Math.abs(total()))*100)}%"></i></div></div>`).join('')}</section>
-<section class="panel"><h2>Ingresos y gastos de este mes</h2><div class="grid"><div class="metric"><small>Ingresos</small><b class="amount-in">${eur(s.in)}</b></div><div class="metric"><small>Gastos</small><b class="amount-out">${eur(s.out)}</b></div></div><div class="big" style="font-size:25px;margin-top:16px">${eur(s.in-s.out)}</div><small class="muted">Balance de movimientos registrados este mes.</small></section>
-<section class="panel"><h2>Capacidad de ahorro estimada</h2><label>Ingresos mensuales (€)</label><input id="incomeTarget" type="number" value="${data.incomeTarget}"><label>Gastos mensuales estimados (€)</label><input id="expenseTarget" type="number" value="${data.expenseTarget||0}"><div class="big" id="savingEstimate">${eur(data.incomeTarget-(data.expenseTarget||0))}</div><small class="muted" id="savingRate"></small></section>
-<section class="panel"><h2>Exportar o recuperar mis datos</h2><p class="note">Descarga una copia de seguridad en formato JSON. Guárdala en Archivos o iCloud Drive. Puedes importarla más adelante desde este mismo apartado.</p><button id="export" style="width:100%">Exportar copia de seguridad</button><label style="display:block;margin-top:14px">Importar copia de seguridad</label><input type="file" id="import" accept=".json,application/json"><button id="reset" class="danger" style="width:100%;margin-top:10px">Restablecer datos de ejemplo</button></section>`;
-const update=()=>{let inc=Number(document.getElementById('incomeTarget').value)||0,ex=Number(document.getElementById('expenseTarget').value)||0;data.incomeTarget=inc;data.expenseTarget=ex;document.getElementById('savingEstimate').textContent=eur(inc-ex);document.getElementById('savingRate').textContent='Tasa de ahorro estimada: '+(inc?Math.round((inc-ex)/inc*100):0)+'%';save()};
-document.getElementById('incomeTarget').onchange=update;document.getElementById('expenseTarget').onchange=update;
-document.getElementById('export').onclick=()=>{let blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='mi-patrimonio-copia.json';a.click();URL.revokeObjectURL(url)};
-document.getElementById('import').onchange=async e=>{try{let obj=JSON.parse(await e.target.files[0].text());if(!obj.accounts||!obj.moves)throw 0;data=obj;save();render();alert('Copia restaurada.')}catch{alert('No se ha podido importar ese archivo.')}};
-document.getElementById('reset').onclick=()=>{if(confirm('¿Seguro? Se borrarán los datos actuales de esta app. Exporta una copia antes si quieres conservarlos.')){data=structuredClone(initial);save();render()}};
-document.getElementById('savingRate').textContent='Tasa de ahorro estimada: '+(data.incomeTarget?Math.round((data.incomeTarget-(data.expenseTarget||0))/data.incomeTarget*100):0)+'%';
+const s=sums(statsGroup),sp=sums('personal'),sc=sums('conjunta'),moves=monthMoves(statsGroup),cats=categoryStats(moves),max=Math.max(1,...cats.map(x=>x[1]));
+const colors=['#3985d6','#16a085','#e5a13b','#9b79c9','#d66b6b','#5c9d91','#778899'];
+const months=Array.from({length:6},(_,i)=>{const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-(5-i));return d.toISOString().slice(0,7)});
+const monthData=months.map(m=>({m, ...sums(statsGroup,m)}));
+app.innerHTML='<section class="panel"><h2>Análisis de gastos y ahorro</h2><div class="tabs"><button class="'+(statsGroup==='all'?'pillactive':'pillidle')+'" data-sgroup="all">Global</button><button class="'+(statsGroup==='personal'?'pillactive':'pillidle')+'" data-sgroup="personal">Personal</button><button class="'+(statsGroup==='conjunta'?'pillactive':'pillidle')+'" data-sgroup="conjunta">Conjunta</button></div><div class="grid"><div class="metric"><small>Ingresos del mes</small><b class="amount-in">'+eur(s.in)+'</b></div><div class="metric"><small>Gastos del mes</small><b class="amount-out">'+eur(s.out)+'</b></div></div><div class="big" style="font-size:25px;margin-top:14px">Ahorro: '+eur(s.in-s.out)+'</div><small class="muted">Solo movimientos registrados en el mes actual.</small></section>'+
+'<section class="panel"><h2>¿En qué gasto?</h2>'+(cats.length?cats.map(([name,value],i)=>'<div class="statline"><div class="name">'+esc(name)+'</div><div class="bar"><i style="width:'+(value/max*100)+'%;background:'+colors[i%colors.length]+'"></i></div><div class="value">'+eur(value)+'</div></div>').join(''):'<div class="empty">Registra gastos para ver su distribución por categoría.</div>')+'</section>'+
+'<section class="panel"><h2>Ingresos, gastos y ahorro · últimos 6 meses</h2>'+monthData.map(x=>'<div style="margin:14px 0"><div class="row"><strong>'+esc(x.m)+'</strong><b class="'+(x.in-x.out>=0?'amount-in':'amount-out')+'">'+eur(x.in-x.out)+'</b></div><div class="statline"><div class="name">Ingresos</div><div class="bar"><i style="width:'+(x.in/Math.max(1,...monthData.map(y=>y.in))*100)+'%;background:#26966b"></i></div><div class="value">'+eur(x.in)+'</div></div><div class="statline"><div class="name">Gastos</div><div class="bar"><i style="width:'+(x.out/Math.max(1,...monthData.map(y=>y.out))*100)+'%;background:#c65b5b"></i></div><div class="value">'+eur(x.out)+'</div></div></div>').join('')+'</section>'+
+'<section class="panel"><h2>Comparación de cuentas</h2><div class="row"><span>Ahorro personal del mes</span><b>'+eur(sp.in-sp.out)+'</b></div><div class="row"><span>Ahorro conjunto del mes</span><b>'+eur(sc.in-sc.out)+'</b></div><div class="row"><span>Patrimonio personal</span><b>'+eur(groupTotal('personal'))+'</b></div><div class="row"><span>Patrimonio conjunto</span><b>'+eur(groupTotal('conjunta'))+'</b></div></section>'+
+'<section class="panel"><h2>Copias de seguridad</h2><p class="note">Descarga regularmente una copia de tus cuentas y movimientos. Los datos se guardan en este navegador y no se sincronizan automáticamente entre dispositivos.</p><button id="export" style="width:100%">Exportar copia de seguridad</button><label style="display:block;margin-top:14px">Importar copia</label><input type="file" id="import" accept=".json,application/json"></section>';
+document.querySelectorAll('[data-sgroup]').forEach(b=>b.onclick=()=>{statsGroup=b.dataset.sgroup;render()});
+document.getElementById('export').onclick=()=>{const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='mi-patrimonio-copia.json';a.click();URL.revokeObjectURL(url)};
+document.getElementById('import').onchange=async e=>{try{const file=e.target.files[0];if(!file)return;const obj=JSON.parse(await file.text());if(!obj.accounts||!obj.moves)throw Error();data=migrate(obj);save();render();alert('Copia restaurada correctamente.')}catch{alert('No se ha podido importar ese archivo.')}};
 }
-document.querySelectorAll('[data-delete-move]').forEach(b=>b.onclick=()=>{if(confirm('¿Borrar este movimiento? No se revierte automáticamente el saldo de la cuenta.')){data.moves=data.moves.filter(m=>m.id!==Number(b.dataset.deleteMove));save();render()}});
-document.querySelectorAll('[data-delete-account]').forEach(b=>b.onclick=()=>{if(confirm('¿Eliminar esta cuenta?')){data.accounts=data.accounts.filter(a=>a.id!==Number(b.dataset.deleteAccount));save();render()}});
 document.querySelectorAll('[data-goal-delete]').forEach(b=>b.onclick=()=>{if(confirm('¿Eliminar objetivo?')){data.goals=data.goals.filter(g=>g.id!==Number(b.dataset.goalDelete));save();render()}});
 }
-function goalMarkup(g){if(!g)return 'Aún no tienes objetivos.';return `<strong>${esc(g.name)}</strong><div class="big" style="font-size:24px">${eur(g.current)} / ${eur(g.target)}</div><div class="progress"><i style="width:${Math.min(100,g.current/Math.max(1,g.target)*100)}%"></i></div>`}
-function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function historyMarkup(filter){const list=data.moves.slice().reverse().filter(m=>filter==='all'||(m.group||'personal')===filter);return list.map(m=>'<div class="row"><div style="min-width:0"><strong>'+esc(m.name)+'</strong><small>'+esc(m.date)+' · '+esc(m.category)+' · '+groupName(m.group||'personal')+'</small></div><div style="text-align:right;white-space:nowrap"><b class="'+(m.kind==='Ingreso'?'amount-in':m.kind==='Gasto'?'amount-out':'')+'">'+(m.kind==='Gasto'?'−':m.kind==='Ingreso'?'+':'⇄')+eur(m.amount)+'</b><br><button class="smallbtn danger" data-delete-move="'+m.id+'">Borrar</button></div></div>').join('')||'<div class="empty">No hay movimientos en esta cuenta.</div>'}
+function wireHistory(){document.querySelectorAll('[data-delete-move]').forEach(b=>b.onclick=()=>{const m=data.moves.find(x=>x.id===Number(b.dataset.deleteMove));if(!m||!confirm('¿Borrar este movimiento? El saldo de la cuenta no se modificará automáticamente.'))return;data.moves=data.moves.filter(x=>x.id!==m.id);save();render()})}
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render()});
-render();
+save();render();
 if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
 </script>
 </body></html>
