@@ -32,6 +32,7 @@ input,select{width:100%;padding:12px;border:1px solid #d8e0dc;border-radius:11px
 <button data-tab="home" class="active"><span>⌂</span>Inicio</button>
 <button data-tab="moves"><span>↕</span>Movimientos</button>
 <button data-tab="accounts"><span>▤</span>Cuentas</button>
+<button data-tab="expiries"><span>◷</span>Vencimientos</button>
 <button data-tab="goals"><span>◎</span>Objetivos</button>
 <button data-tab="stats"><span>▥</span>Análisis</button>
 </nav>
@@ -44,12 +45,13 @@ const initial={accounts:[
 {id:4,name:'imaginBank · Casa',type:'Cuenta',group:'conjunta',balance:0},
 {id:5,name:'Fondo S&P 500',type:'Inversión',group:'personal',balance:2580},
 {id:6,name:'Criptomonedas',type:'Inversión',group:'personal',balance:0}],
-moves:[],goals:[{id:1,name:'Colchón de seguridad',target:20000,current:0}],budgets:[],incomeTarget:3670};
+moves:[],expiries:[],goals:[{id:1,name:'Colchón de seguridad',target:20000,current:0}],budgets:[],incomeTarget:3670};
 function migrate(raw){
 const d=raw&&typeof raw==='object'?raw:structuredClone(initial);
 d.accounts=Array.isArray(d.accounts)?d.accounts:[];
 d.moves=Array.isArray(d.moves)?d.moves:[];
 d.goals=Array.isArray(d.goals)?d.goals:[];
+d.expiries=Array.isArray(d.expiries)?d.expiries:[];
 d.accounts.forEach(a=>{if(!a.group)a.group=/conjunta|casa|revolut/i.test(a.name)?'conjunta':'personal'});
 d.moves.forEach(m=>{
 if(!m.group){const a=d.accounts.find(x=>x.id===m.account);m.group=a?.group||'personal'}
@@ -112,6 +114,17 @@ app.innerHTML='<section class="panel"><h2>Cuentas personales y conjuntas</h2><p 
 '<section class="grid"><div class="panel metric"><small>Personal</small><b>'+eur(groupTotal('personal'))+'</b></div><div class="panel metric"><small>Conjunta</small><b>'+eur(groupTotal('conjunta'))+'</b></div></section>';
 document.querySelectorAll('[data-balance]').forEach(i=>i.onchange=()=>{let a=data.accounts.find(x=>x.id===Number(i.dataset.balance));a.balance=Number(i.value)||0;save();render()});
 document.getElementById('accountForm').onsubmit=e=>{e.preventDefault();let f=new FormData(e.target);data.accounts.push({id:Date.now(),name:f.get('name'),type:f.get('type'),group:f.get('group'),balance:Number(f.get('balance'))||0});save();render()};
+}else if(tab==='expiries'){
+const today=new Date();today.setHours(0,0,0,0);
+const sorted=data.expiries.slice().sort((a,b)=>a.date.localeCompare(b.date));
+const daysLeft=date=>Math.ceil((new Date(date+'T00:00:00')-today)/86400000);
+const status=e=>{const d=daysLeft(e.date);return d<0?'<span class="tag" style="background:#fae8e8;color:#b44343">Vencido hace '+Math.abs(d)+' días</span>':d===0?'<span class="tag" style="background:#fae8e8;color:#b44343">Vence hoy</span>':d<=30?'<span class="tag" style="background:#fff1d9;color:#8a5b13">En '+d+' días</span>':'<span class="tag">En '+d+' días</span>'};
+app.innerHTML='<section class="panel"><h2>Documentos y vencimientos</h2><p class="note">Ten localizados tus documentos, pólizas y renovaciones. Los más próximos aparecen primero.</p>'+ (sorted.length?sorted.map(e=>'<div class="row" style="align-items:flex-start"><div style="min-width:0;flex:1"><strong>'+esc(e.name)+'</strong><small>'+esc(e.category)+(e.notes?' · '+esc(e.notes):'')+'</small><div style="margin-top:7px">'+status(e)+'</div></div><div style="text-align:right;white-space:nowrap"><b>'+new Date(e.date+'T12:00:00').toLocaleDateString('es-ES')+'</b><div style="margin-top:7px"><button class="smallbtn secondary" data-expiry-edit="'+e.id+'">Editar</button> <button class="smallbtn danger" data-expiry-delete="'+e.id+'">Borrar</button></div></div></div>').join(''):'<div class="empty">Todavía no has añadido documentos o vencimientos.</div>')+'</section>'+
+'<section class="panel"><h2>Añadir documento o vencimiento</h2><form id="expiryForm"><label>Nombre</label><input name="name" placeholder="Ej. Seguro del coche" required><label>Tipo</label><select name="category">'+['DNI','Pasaporte','Carnet de conducir','Seguro de coche','Seguro de hogar','Seguro de vida','ITV','Impuesto de circulación','Hipoteca / préstamo','Suscripción','Garantía','Otro'].map(x=>'<option>'+x+'</option>').join('')+'</select><label>Fecha de vencimiento o renovación</label><input name="date" type="date" required><label>Notas (opcional)</label><input name="notes" placeholder="Ej. Compañía, número de póliza..."><button style="width:100%">Guardar vencimiento</button></form></section>'+
+'<section class="panel"><p class="note">Aviso: esta sección muestra los días que faltan cuando abres la aplicación. Todavía no envía notificaciones automáticas ni avisos cuando la app está cerrada.</p></section>';
+document.getElementById('expiryForm').onsubmit=e=>{e.preventDefault();const f=new FormData(e.target);data.expiries.push({id:Date.now(),name:f.get('name').trim(),category:f.get('category'),date:f.get('date'),notes:f.get('notes').trim()});save();render()};
+document.querySelectorAll('[data-expiry-delete]').forEach(b=>b.onclick=()=>{if(confirm('¿Eliminar este vencimiento?')){data.expiries=data.expiries.filter(x=>x.id!==Number(b.dataset.expiryDelete));save();render()}});
+document.querySelectorAll('[data-expiry-edit]').forEach(b=>b.onclick=()=>{const x=data.expiries.find(v=>v.id===Number(b.dataset.expiryEdit));if(!x)return;const name=prompt('Nombre',x.name);if(name===null)return;const date=prompt('Fecha (AAAA-MM-DD)',x.date);if(date===null)return;const notes=prompt('Notas',x.notes||'');if(notes===null)return;if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)){alert('Introduce la fecha con formato AAAA-MM-DD.');return}x.name=name.trim()||x.name;x.date=date;x.notes=notes.trim();save();render()});
 }else if(tab==='goals'){
 app.innerHTML='<section class="panel"><h2>Mis objetivos de ahorro</h2>'+data.goals.map(g=>'<div style="margin:14px 0"><strong>'+esc(g.name)+'</strong><div class="big" style="font-size:24px">'+eur(g.current)+' <small class="muted" style="font-size:14px">/ '+eur(g.target)+'</small></div><div class="bar"><i style="width:'+Math.min(100,g.current/Math.max(1,g.target)*100)+'%;background:#26966b"></i></div><small class="muted">'+Math.round(Math.min(100,g.current/Math.max(1,g.target)*100))+'% completado · Faltan '+eur(Math.max(0,g.target-g.current))+'</small><div style="display:flex;gap:8px;margin-top:8px"><button class="secondary smallbtn" data-goal-edit="'+g.id+'">Editar</button><button class="danger smallbtn" data-goal-delete="'+g.id+'">Eliminar</button></div></div>').join('')||'<div class="empty">Crea un objetivo de ahorro.</div>'+'</section>'+
 '<section class="panel"><h2>Crear objetivo</h2><form id="goalForm"><label>Nombre</label><input name="name" required><label>Importe objetivo (€)</label><input name="target" type="number" min="1" required><label>Ahorrado actualmente (€)</label><input name="current" type="number" min="0" value="0"><button style="width:100%">Crear objetivo</button></form></section>';
