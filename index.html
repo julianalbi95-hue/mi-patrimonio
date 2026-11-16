@@ -176,6 +176,6 @@ document.addEventListener('click',e=>{if(e.target.closest('[data-goto-subscripti
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render()});
 processDueSubscriptions();
 save();render();
-if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
+if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js?v=7').catch(()=>{});
 </script>
 </body></html>
