@@ -45,13 +45,14 @@ const initial={accounts:[
 {id:4,name:'imaginBank · Casa',type:'Cuenta',group:'conjunta',balance:0},
 {id:5,name:'Fondo S&P 500',type:'Inversión',group:'personal',balance:2580},
 {id:6,name:'Criptomonedas',type:'Inversión',group:'personal',balance:0}],
-moves:[],expiries:[],goals:[{id:1,name:'Colchón de seguridad',target:20000,current:0}],budgets:[],incomeTarget:3670};
+moves:[],expiries:[],subscriptions:[],goals:[{id:1,name:'Colchón de seguridad',target:20000,current:0}],budgets:[],incomeTarget:3670};
 function migrate(raw){
 const d=raw&&typeof raw==='object'?raw:structuredClone(initial);
 d.accounts=Array.isArray(d.accounts)?d.accounts:[];
 d.moves=Array.isArray(d.moves)?d.moves:[];
 d.goals=Array.isArray(d.goals)?d.goals:[];
 d.expiries=Array.isArray(d.expiries)?d.expiries:[];
+d.subscriptions=Array.isArray(d.subscriptions)?d.subscriptions:[];
 d.accounts.forEach(a=>{if(!a.group)a.group=/conjunta|casa|revolut/i.test(a.name)?'conjunta':'personal'});
 d.moves.forEach(m=>{
 if(!m.group){const a=d.accounts.find(x=>x.id===m.account);m.group=a?.group||'personal'}
@@ -73,6 +74,23 @@ const sums=(g='all',month=currentMonth())=>{let ms=monthMoves(g,month);return {i
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const groupName=g=>g==='conjunta'?'Conjunta':'Personal';
 function goalMarkup(g){if(!g)return 'Aún no tienes objetivos.';return '<strong>'+esc(g.name)+'</strong><div class="big" style="font-size:24px">'+eur(g.current)+' / '+eur(g.target)+'</div><div class="bar"><i style="width:'+Math.min(100,g.current/Math.max(1,g.target)*100)+'%;background:#26966b"></i></div>'}
+function localISO(d=new Date()){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return y+'-'+m+'-'+day}
+function addOneMonth(date){const [y,m,day]=date.split('-').map(Number);const nextMonth=m===12?1:m+1,nextYear=m===12?y+1:y;const lastDay=new Date(nextYear,nextMonth,0).getDate();return nextYear+'-'+String(nextMonth).padStart(2,'0')+'-'+String(Math.min(day,lastDay)).padStart(2,'0')}
+function processDueSubscriptions(){
+const today=localISO();let changed=false;
+data.subscriptions.filter(s=>s.active!==false).forEach(s=>{
+if(!s.nextDate||!s.account)return;
+let guard=0;
+while(s.nextDate<=today&&guard++<120){
+const a=data.accounts.find(x=>x.id===Number(s.account));if(!a)break;
+const date=s.nextDate,amount=Number(s.amount)||0,month=date.slice(0,7);
+a.balance=Number(a.balance||0)-amount;
+data.moves.push({id:Date.now()+data.moves.length,name:s.name,amount,kind:'Gasto',category:s.category||'Suscripciones',account:a.id,group:a.group||'personal',date:new Date(date+'T12:00:00').toLocaleDateString('es-ES'),month,subscriptionId:s.id});
+s.nextDate=addOneMonth(s.nextDate);changed=true;
+}
+});
+if(changed)save();
+}
 function categoryStats(moves){
 const map={};moves.filter(m=>m.kind==='Gasto').forEach(m=>map[m.category]=(map[m.category]||0)+Number(m.amount));
 return Object.entries(map).sort((a,b)=>b[1]-a[1]);
@@ -91,7 +109,11 @@ app.innerHTML='<section class="panel hero"><small>Patrimonio total</small><div c
 '<section class="panel"><h2>Objetivo principal</h2>'+goalMarkup(data.goals[0])+'</section>';
 }else if(tab==='moves'){
 const accts=data.accounts;
-app.innerHTML='<section class="panel"><h2>Registrar movimiento</h2><form id="moveForm">'+
+const activeSubs=data.subscriptions.filter(s=>s.active!==false);
+app.innerHTML='<section class="panel"><h2>Suscripciones mensuales</h2><p class="note">Añade Netflix, Spotify, gimnasio, etc. La app registrará el gasto y descontará el saldo de la cuenta elegida al llegar la fecha de cobro.</p>'+
+(activeSubs.length?activeSubs.map(s=>{const a=data.accounts.find(x=>x.id===Number(s.account));return '<div class="row"><div style="min-width:0;flex:1"><strong>'+esc(s.name)+'</strong><small>'+eur(s.amount)+' al mes · '+esc(a?.name||'Cuenta no encontrada')+'</small><div style="margin-top:5px"><span class="tag">Próximo cobro: '+new Date(s.nextDate+'T12:00:00').toLocaleDateString('es-ES')+'</span></div></div><button class="smallbtn danger" data-sub-cancel="'+s.id+'">Cancelar</button></div>'}).join(''):'<div class="empty">Todavía no tienes suscripciones activas.</div>')+
+'<form id="subForm"><h2 style="margin-top:18px">Añadir suscripción</h2><label>Nombre</label><input name="name" placeholder="Ej. Netflix" required><label>Importe mensual (€)</label><input name="amount" type="number" min="0.01" step="0.01" placeholder="8.99" required><label>Categoría</label><select name="category"><option>Suscripciones</option><option>Ocio</option><option>Deporte</option><option>Otros</option></select><label>Cuenta desde la que se cobra</label><select name="account">'+data.accounts.filter(a=>a.type==='Cuenta'||a.type==='Ahorro').map(a=>'<option value="'+a.id+'">'+esc(a.name)+'</option>').join('')+'</select><label>Fecha del primer / próximo cobro</label><input name="nextDate" type="date" value="'+localISO()+'" required><button style="width:100%">Añadir suscripción</button></form></section>'+
+'<section class="panel"><h2>Registrar movimiento</h2><form id="moveForm">'+
 '<label>Tipo</label><select name="kind"><option>Gasto</option><option>Ingreso</option><option>Transferencia</option></select>'+
 '<label>Concepto</label><input name="name" placeholder="Ej. Compra supermercado" required>'+
 '<label>Importe (€)</label><input name="amount" type="number" min="0.01" step="0.01" required>'+
@@ -102,6 +124,8 @@ app.innerHTML='<section class="panel"><h2>Registrar movimiento</h2><form id="mov
 '<label>Fecha</label><input name="date" type="date" value="'+new Date().toISOString().slice(0,10)+'" required>'+
 '<button style="width:100%">Guardar movimiento</button></form></section>'+
 '<section class="panel"><h2>Historial de movimientos</h2><div class="tabs"><button class="pillactive" data-filter="all">Todos</button><button class="pillidle" data-filter="personal">Personal</button><button class="pillidle" data-filter="conjunta">Conjunta</button></div><div id="history">'+historyMarkup('all')+'</div></section>';
+document.getElementById('subForm').onsubmit=e=>{e.preventDefault();const f=new FormData(e.target),a=data.accounts.find(x=>x.id===Number(f.get('account'))),amount=Number(f.get('amount')),nextDate=f.get('nextDate');if(!a||!amount||amount<=0||!nextDate)return;data.subscriptions.push({id:Date.now(),name:f.get('name').trim(),amount,category:f.get('category'),account:a.id,nextDate,active:true});processDueSubscriptions();save();render()};
+document.querySelectorAll('[data-sub-cancel]').forEach(b=>b.onclick=()=>{const s=data.subscriptions.find(x=>x.id===Number(b.dataset.subCancel));if(s&&confirm('¿Cancelar '+s.name+'? No se generarán más cargos automáticos.')){s.active=false;save();render()}});
 const f=document.getElementById('moveForm'),group=document.getElementById('moveGroup'),account=document.getElementById('moveAccount'),to=document.getElementById('toAccount');
 function filterAccounts(){const list=accts.filter(a=>a.group===group.value);account.innerHTML=list.map(a=>'<option value="'+a.id+'">'+esc(a.name)+'</option>').join('');to.innerHTML=accts.map(a=>'<option value="'+a.id+'">'+esc(a.name)+'</option>').join('')}
 group.addEventListener('change',filterAccounts);f.kind.addEventListener('change',()=>document.getElementById('transferToWrap').classList.toggle('hidden',f.kind.value!=='Transferencia'));
@@ -149,6 +173,7 @@ document.querySelectorAll('[data-goal-delete]').forEach(b=>b.onclick=()=>{if(con
 function historyMarkup(filter){const list=data.moves.slice().reverse().filter(m=>filter==='all'||(m.group||'personal')===filter);return list.map(m=>'<div class="row"><div style="min-width:0"><strong>'+esc(m.name)+'</strong><small>'+esc(m.date)+' · '+esc(m.category)+' · '+groupName(m.group||'personal')+'</small></div><div style="text-align:right;white-space:nowrap"><b class="'+(m.kind==='Ingreso'?'amount-in':m.kind==='Gasto'?'amount-out':'')+'">'+(m.kind==='Gasto'?'−':m.kind==='Ingreso'?'+':'⇄')+eur(m.amount)+'</b><br><button class="smallbtn danger" data-delete-move="'+m.id+'">Borrar</button></div></div>').join('')||'<div class="empty">No hay movimientos en esta cuenta.</div>'}
 function wireHistory(){document.querySelectorAll('[data-delete-move]').forEach(b=>b.onclick=()=>{const m=data.moves.find(x=>x.id===Number(b.dataset.deleteMove));if(!m||!confirm('¿Borrar este movimiento? El saldo de la cuenta no se modificará automáticamente.'))return;data.moves=data.moves.filter(x=>x.id!==m.id);save();render()})}
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render()});
+processDueSubscriptions();
 save();render();
 if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
 </script>
