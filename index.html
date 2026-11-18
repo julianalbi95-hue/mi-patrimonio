@@ -62,7 +62,7 @@ if(!m.month){const p=m.date.split('/');m.month=p.length===3?p[2]+'-'+p[1].padSta
 return d;
 }
 let data;try{data=migrate(JSON.parse(localStorage.getItem(KEY))||structuredClone(initial))}catch{data=structuredClone(initial)}
-let tab='home',statsGroup='all',movesFilter='all',movesSearchOpen=false,movesSearchTerm='',selectedMovesMonth=currentMonth(),movesMonthDetail=null;
+let tab='home',statsGroup='all',movesFilter='all',movesSearchOpen=false,movesSearchTerm='',selectedMovesMonth=new Date().toISOString().slice(0,7),movesMonthDetail=null;
 const eur=n=>Number(n||0).toLocaleString('es-ES',{style:'currency',currency:'EUR'});
 let supabaseClient=null, authSession=null, cloudReady=false, cloudSaveTimer=null;
 const SUPABASE_URL='https://ulheujreaunsahulnxeb.supabase.co';
