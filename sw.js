@@ -1,4 +1,4 @@
-const CACHE='mi-patrimonio-v15';
+const CACHE='mi-patrimonio-v16';
 const FILES=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',event=>{self.skipWaiting();event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES)))});
 self.addEventListener('activate',event=>event.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(key=>key.startsWith('mi-patrimonio-')&&key!==CACHE).map(key=>caches.delete(key)));await self.clients.claim()})()));
