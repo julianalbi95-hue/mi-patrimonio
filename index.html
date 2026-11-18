@@ -26,7 +26,7 @@ input,select{width:100%;padding:12px;border:1px solid #d8e0dc;border-radius:11px
 </style>
 </head>
 <body>
-<header><div class="top"><div><h1>Mi Patrimonio</h1><small>Tu centro de control financiero</small></div><div>💶</div></div></header>
+<header><div class="top"><div><h1>Mi Patrimonio</h1><small>Tu centro de control financiero</small></div><div style="display:flex;align-items:center;gap:10px"><small id="syncStatus" style="font-size:11px"></small><button id="logoutBtn" class="smallbtn secondary hidden" type="button">Salir</button>💶</div></div></header>
 <main id="app"></main>
 <nav>
 <button data-tab="home" class="active"><span>⌂</span>Inicio</button>
@@ -36,6 +36,7 @@ input,select{width:100%;padding:12px;border:1px solid #d8e0dc;border-radius:11px
 <button data-tab="goals"><span>◎</span>Objetivos</button>
 <button data-tab="stats"><span>▥</span>Análisis</button>
 </nav>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const KEY='miPatrimonio_v1';
 const initial={accounts:[
@@ -64,7 +65,22 @@ return d;
 let data;try{data=migrate(JSON.parse(localStorage.getItem(KEY))||structuredClone(initial))}catch{data=structuredClone(initial)}
 let tab='home',statsGroup='all';
 const eur=n=>Number(n||0).toLocaleString('es-ES',{style:'currency',currency:'EUR'});
-const save=()=>localStorage.setItem(KEY,JSON.stringify(data));
+let supabaseClient=null, authSession=null, cloudReady=false, cloudSaveTimer=null;
+const SUPABASE_URL='https://ulheujreaunsahulnxeb.supabase.co';
+const SUPABASE_KEY='sb_publishable_H1O0sr2bstyoFTcM6XAcQA_EYW5lE31';
+const save=()=>{
+ localStorage.setItem(KEY,JSON.stringify(data));
+ if(authSession&&cloudReady){
+  clearTimeout(cloudSaveTimer);
+  cloudSaveTimer=setTimeout(async()=>{
+   try{
+    const {error}=await supabaseClient.from('app_data').upsert({user_id:authSession.user.id,data,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+    if(error) throw error;
+    const s=document.getElementById('syncStatus');if(s)s.textContent='Sincronizado';
+   }catch(err){console.error('Error al sincronizar:',err);const s=document.getElementById('syncStatus');if(s)s.textContent='Error al sincronizar';}
+  },700);
+ }
+};
 const total=()=>data.accounts.reduce((s,a)=>s+Number(a.balance||0),0);
 const groupTotal=g=>data.accounts.filter(a=>a.group===g).reduce((s,a)=>s+Number(a.balance||0),0);
 const sumType=t=>data.accounts.filter(a=>a.type===t).reduce((s,a)=>s+Number(a.balance||0),0);
@@ -174,8 +190,46 @@ function historyMarkup(filter){const list=data.moves.slice().reverse().filter(m=
 function wireHistory(){document.querySelectorAll('[data-delete-move]').forEach(b=>b.onclick=()=>{const m=data.moves.find(x=>x.id===Number(b.dataset.deleteMove));if(!m||!confirm('¿Borrar este movimiento? El saldo de la cuenta no se modificará automáticamente.'))return;data.moves=data.moves.filter(x=>x.id!==m.id);save();render()})}
 document.addEventListener('click',e=>{if(e.target.closest('[data-goto-subscriptions]')){tab='moves';render();document.getElementById('subForm')?.scrollIntoView({behavior:'smooth',block:'center'})}});
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render()});
-processDueSubscriptions();
-save();render();
-if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js?v=7').catch(()=>{});
+function showLogin(message=''){
+ document.querySelector('nav').classList.add('hidden');
+ document.getElementById('logoutBtn')?.classList.add('hidden');
+ document.getElementById('app').innerHTML='<section class="panel" style="max-width:420px;margin:30px auto"><h2>Entrar en Mi Patrimonio</h2><p class="note">Accede con el correo y la contraseña que has creado en Supabase.</p><form id="loginForm"><label>Correo electrónico</label><input name="email" type="email" autocomplete="username" required placeholder="tu correo"><label>Contraseña</label><input name="password" type="password" autocomplete="current-password" required placeholder="Tu contraseña"><button id="loginBtn" style="width:100%">Iniciar sesión</button><p id="loginMessage" class="note" style="margin-top:12px">'+esc(message)+'</p></form></section>';
+ document.getElementById('loginForm').onsubmit=async e=>{
+  e.preventDefault();const f=new FormData(e.target),btn=document.getElementById('loginBtn'),msg=document.getElementById('loginMessage');btn.disabled=true;btn.textContent='Entrando...';msg.textContent='';
+  const {error}=await supabaseClient.auth.signInWithPassword({email:f.get('email'),password:f.get('password')});
+  if(error){msg.textContent='No se ha podido iniciar sesión: '+error.message;btn.disabled=false;btn.textContent='Iniciar sesión';}
+ };
+}
+async function loadUserData(session){
+ authSession=session;cloudReady=false;
+ const status=document.getElementById('syncStatus');if(status)status.textContent='Cargando datos...';
+ const {data:row,error}=await supabaseClient.from('app_data').select('data').eq('user_id',session.user.id).maybeSingle();
+ if(error){showLogin('No se han podido cargar tus datos: '+error.message);return;}
+ if(row&&row.data){data=migrate(row.data);localStorage.setItem(KEY,JSON.stringify(data));}
+ else{
+  // Primera conexión: conservar y subir los datos que ya están guardados en este ordenador.
+  const {error:insertError}=await supabaseClient.from('app_data').upsert({user_id:session.user.id,data,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+  if(insertError){showLogin('No se ha podido guardar la primera copia: '+insertError.message);return;}
+ }
+ cloudReady=true;
+ document.querySelector('nav').classList.remove('hidden');
+ document.getElementById('logoutBtn')?.classList.remove('hidden');
+ if(status)status.textContent='Sincronizado';
+ processDueSubscriptions();save();render();
+}
+async function startApp(){
+ if(!window.supabase){showLogin('No se ha podido cargar el servicio de acceso. Comprueba tu conexión a internet y vuelve a cargar la página.');return;}
+ supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+ const {data:{session},error}=await supabaseClient.auth.getSession();
+ if(error){showLogin('Error al comprobar la sesión: '+error.message);return;}
+ if(session)await loadUserData(session);else showLogin();
+ supabaseClient.auth.onAuthStateChange((event,session)=>{
+  if(event==='SIGNED_IN'&&session)loadUserData(session);
+  if(event==='SIGNED_OUT'){authSession=null;cloudReady=false;showLogin('Has cerrado sesión.');}
+ });
+}
+document.getElementById('logoutBtn')?.addEventListener('click',()=>supabaseClient?.auth.signOut());
+startApp();
+if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js?v=8').catch(()=>{});
 </script>
 </body></html>
