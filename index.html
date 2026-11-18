@@ -63,6 +63,17 @@ d.subscriptions=Array.isArray(d.subscriptions)?d.subscriptions:[];
 d.layoutOrder=d.layoutOrder&&typeof d.layoutOrder==='object'?d.layoutOrder:{};
 d.layoutHidden=d.layoutHidden&&typeof d.layoutHidden==='object'?d.layoutHidden:{};
 d.customBlocks=d.customBlocks&&typeof d.customBlocks==='object'?d.customBlocks:{};
+if(!d.investmentMigrationV1){
+ const old=d.accounts.filter(a=>a.type==='Inversión');
+ if(old.length){
+  const existing=old.find(a=>Array.isArray(a.assets));
+  const assets=existing?existing.assets.slice():old.map(a=>({id:'asset-'+a.id,name:a.name,value:Number(a.balance)||0,quantity:'',ticker:''}));
+  const balance=old.reduce((n,a)=>n+(Number(a.balance)||0),0),first=existing||old[0];
+  d.accounts=d.accounts.filter(a=>a.type!=='Inversión');
+  d.accounts.push({id:first.id,name:'Inversiones',type:'Inversión',group:first.group||'personal',balance,assets});
+ }
+ d.investmentMigrationV1=true;
+}
 d.accounts.forEach(a=>{if(!a.group)a.group=/conjunta|casa|revolut/i.test(a.name)?'conjunta':'personal'});
 d.moves.forEach(m=>{
 if(!m.group){const a=d.accounts.find(x=>x.id===m.account);m.group=a?.group||'personal'}
@@ -121,38 +132,21 @@ const map={};moves.filter(m=>m.kind==='Gasto').forEach(m=>map[m.category]=(map[m
 return Object.entries(map).sort((a,b)=>b[1]-a[1]);
 }
 
+function investmentAccount(){return data.accounts.find(a=>a.type==='Inversión')}
+function investmentAssets(){const a=investmentAccount();return Array.isArray(a?.assets)?a.assets:[]}
+function investmentValue(){return investmentAssets().reduce((n,x)=>n+(Number(x.value)||0),0)}
 function homeChartsMarkup(){
  const months=[];const cursor=new Date();cursor.setDate(1);
  for(let i=5;i>=0;i--){const d=new Date(cursor.getFullYear(),cursor.getMonth()-i,1);months.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));}
- const monthData=months.map(month=>{const v=sums('all',month);return {month,income:v.in,expense:v.out};});
- const maxValue=Math.max(1,...monthData.flatMap(x=>[x.income,x.expense]));
- const monthBars=monthData.map(x=>{const label=new Date(Number(x.month.slice(0,4)),Number(x.month.slice(5,7))-1,1).toLocaleDateString('es-ES',{month:'short'}).replace('.','');return '<div class="chart-month"><div class="chart-pair"><i class="chart-bar income" title="Ingresos: '+eur(x.income)+'" style="height:'+Math.max(x.income?3:0,x.income/maxValue*100)+'%"></i><i class="chart-bar expense" title="Gastos: '+eur(x.expense)+'" style="height:'+Math.max(x.expense?3:0,x.expense/maxValue*100)+'%"></i></div><small>'+label+'</small></div>'}).join('');
- const palette=['#26966b','#4787bd','#9274bb','#d69a43','#d76b6b','#269ca5','#8a9b45','#b47b9d','#6d7c91','#c18b55'];
- const accounts=[];
- let investmentTotal=0;
- data.accounts.forEach((a,i)=>{
-  const value=Number(a.balance)||0;
-  if(a.type==='Inversión')investmentTotal+=value;
-  else accounts.push({name:a.name,value,slice:Math.max(0,value),color:palette[i%palette.length]});
- });
- if(investmentTotal!==0)accounts.push({name:'Inversiones',value:investmentTotal,slice:Math.max(0,investmentTotal),color:palette[accounts.length%palette.length]});
- const totalValue=accounts.reduce((n,a)=>n+a.slice,0);
- let offset=0;const stops=accounts.map(a=>{const begin=offset;offset+=totalValue?a.slice/totalValue*100:0;return a.color+' '+begin+'% '+offset+'%'}).join(',');
- let labelOffset=0;
- const donutLabels=accounts.map(a=>{
-  const pct=totalValue?a.slice/totalValue*100:0;
-  const middle=(labelOffset+pct/2)*3.6-90;
-  labelOffset+=pct;
-  if(pct<5)return '';
-  const rad=middle*Math.PI/180;
-  const left=71+49*Math.cos(rad),top=71+49*Math.sin(rad);
-  return '<span style="position:absolute;left:'+left+'px;top:'+top+'px;transform:translate(-50%,-50%);z-index:2;color:#fff;font-size:10px;font-weight:800;text-shadow:0 1px 3px #222,0 0 3px #222;pointer-events:none;white-space:nowrap">'+pct.toFixed(1).replace('.',',')+'%</span>';
- }).join('');
- const donut=totalValue?'<div class="donut" style="background:conic-gradient('+stops+')">'+donutLabels+'<div class="donut-center"><strong>'+eur(totalValue)+'</strong><span>Patrimonio</span></div></div>':'<div class="empty" style="padding:20px">Añade saldos positivos a tus cuentas para ver el gráfico.</div>';
- const legend=accounts.map(a=>{const pct=totalValue?a.slice/totalValue*100:0;return '<div class="row"><div style="min-width:0;display:flex;align-items:center;gap:6px"><i class="legend-dot" style="background:'+a.color+';flex:0 0 9px"></i><span style="overflow-wrap:anywhere">'+esc(a.name)+'</span></div><strong style="white-space:nowrap">'+pct.toFixed(1).replace('.',',')+'% · '+eur(a.value)+'</strong></div>'}).join('');
- return '<section class="panel chart-card"><h2>Distribución de mi patrimonio</h2><p class="chart-subtitle">Las cuentas se muestran por separado, excepto las inversiones, que aparecen agrupadas.</p><div class="donut-wrap">'+donut+'<div class="donut-legend">'+(legend||'<div class="empty">Todavía no tienes cuentas.</div>')+'</div></div></section><section class="panel chart-card"><h2>Ingresos y gastos</h2><p class="chart-subtitle">Comparativa de los últimos seis meses, según los movimientos registrados.</p><div class="chart-bars">'+monthBars+'</div><div class="chart-legend"><span><i class="legend-dot" style="background:#26966b"></i>Ingresos</span><span><i class="legend-dot" style="background:#d76b6b"></i>Gastos</span></div></section>';
+ const monthData=months.map(month=>{const v=sums('all',month);return {month,income:v.in,expense:v.out};}),maxValue=Math.max(1,...monthData.flatMap(x=>[x.income,x.expense]));
+ const monthBars=monthData.map(x=>{const label=new Date(Number(x.month.slice(0,4)),Number(x.month.slice(5,7))-1,1).toLocaleDateString('es-ES',{month:'short'}).replace('.','');return '<div class="chart-month"><div class="chart-pair"><i class="chart-bar income" style="height:'+Math.max(x.income?3:0,x.income/maxValue*100)+'%"></i><i class="chart-bar expense" style="height:'+Math.max(x.expense?3:0,x.expense/maxValue*100)+'%"></i></div><small>'+label+'</small></div>'}).join('');
+ const palette=['#26966b','#4787bd','#9274bb','#d69a43','#d76b6b','#269ca5','#8a9b45','#b47b9d','#6d7c91','#c18b55'],assets=investmentAssets(),invTotal=investmentValue(),accounts=[];
+ data.accounts.forEach((a,i)=>{if(a.type!=='Inversión'){const v=Number(a.balance)||0;accounts.push({name:a.name,value:v,slice:Math.max(0,v),color:palette[i%palette.length]})}});
+ if(invTotal)accounts.push({name:'Inversiones',value:invTotal,slice:Math.max(0,invTotal),color:palette[accounts.length%palette.length]});
+ const donut=(items,label)=>{const total=items.reduce((n,x)=>n+x.slice,0);let off=0;const stops=items.map(x=>{const st=off;off+=total?x.slice/total*100:0;return x.color+' '+st+'% '+off+'%'}).join(',');const legend=items.map(x=>'<div class="row"><span>'+esc(x.name)+'</span><strong>'+((total?x.slice/total*100:0).toFixed(1).replace('.',','))+'% · '+eur(x.value)+'</strong></div>').join('');return total?'<div class="donut-wrap"><div class="donut" style="background:conic-gradient('+stops+')"><div class="donut-center"><strong>'+eur(total)+'</strong><span>'+label+'</span></div></div><div class="donut-legend">'+legend+'</div></div>':'<div class="empty">Todavía no hay inversiones registradas.</div>'};
+ const invItems=assets.map((x,i)=>({name:x.name,value:Number(x.value)||0,slice:Math.max(0,Number(x.value)||0),color:palette[i%palette.length]}));
+ return '<section class="panel chart-card"><h2>Distribución de mi patrimonio</h2><p class="chart-subtitle">Las inversiones aparecen agrupadas.</p>'+donut(accounts,'Patrimonio')+'</section><section class="panel chart-card"><h2>Mis inversiones</h2><p class="chart-subtitle">Distribución del valor de cada activo.</p>'+donut(invItems,'Inversiones')+'</section><section class="panel chart-card"><h2>Ingresos y gastos</h2><p class="chart-subtitle">Comparativa de los últimos seis meses.</p><div class="chart-bars">'+monthBars+'</div><div class="chart-legend"><span><i class="legend-dot" style="background:#26966b"></i>Ingresos</span><span><i class="legend-dot" style="background:#d76b6b"></i>Gastos</span></div></section>';
 }
-
 function render(){
 document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
 const app=document.getElementById('app');
@@ -160,7 +154,7 @@ if(tab==='home'){
 const s=sums(),sp=sums('personal'),sc=sums('conjunta');
 app.innerHTML='<section class="panel hero"><small>Patrimonio total</small><div class="big">'+eur(total())+'</div><div class="muted">Todo tu dinero: ahorro, cuentas e inversiones</div></section>'+
 '<div class="actionrow"><button type="button" data-add-move="Gasto">＋ Añadir gasto</button><button type="button" class="secondary" data-add-move="Ingreso">＋ Añadir ingreso</button></div>'+
-'<section class="panel"><h2>Mi patrimonio personal</h2><div class="big" style="font-size:26px">'+eur(groupTotal('personal'))+'</div><div class="row"><div><strong>Mi ahorro personal</strong><small>Cuentas y depósitos de ahorro</small></div><b>'+eur(data.accounts.filter(a=>a.group==='personal'&&a.type==='Ahorro').reduce((n,a)=>n+Number(a.balance||0),0))+'</b></div><div class="row"><div><strong>Mi cuenta de gastos</strong><small>Dinero disponible para gastos personales</small></div><b>'+eur(data.accounts.filter(a=>a.group==='personal'&&a.type==='Cuenta').reduce((n,a)=>n+Number(a.balance||0),0))+'</b></div><div class="row"><div><strong>Mis inversiones</strong><small>Fondos, ETF, acciones y criptomonedas</small></div><b>'+eur(data.accounts.filter(a=>a.group==='personal'&&a.type==='Inversión').reduce((n,a)=>n+Number(a.balance||0),0))+'</b></div></section>'+
+'<section class="panel"><h2>Mi patrimonio personal</h2><div class="big" style="font-size:26px">'+eur(groupTotal('personal'))+'</div><div class="row"><div><strong>Mi ahorro personal</strong><small>Cuentas y depósitos de ahorro</small></div><b>'+eur(data.accounts.filter(a=>a.group==='personal'&&a.type==='Ahorro').reduce((n,a)=>n+Number(a.balance||0),0))+'</b></div><div class="row"><div><strong>Mi cuenta de gastos</strong><small>Dinero disponible para gastos personales</small></div><b>'+eur(data.accounts.filter(a=>a.group==='personal'&&a.type==='Cuenta').reduce((n,a)=>n+Number(a.balance||0),0))+'</b></div><div class="row"><div><strong>Mis inversiones</strong><small>Fondos, ETF, acciones y criptomonedas</small></div><b>'+eur(data.accounts.filter(a=>a.group==='personal'&&a.type==='Inversión').reduce((n,a)=>n+(Array.isArray(a.assets)?a.assets.reduce((v,x)=>v+(Number(x.value)||0),0):Number(a.balance)||0),0))+'</b></div></section>'+
 '<section class="panel"><h2>Patrimonio conjunto</h2><div class="big" style="font-size:26px">'+eur(groupTotal('conjunta'))+'</div><div class="row"><div><strong>Ahorro conjunto</strong><small>Ahorro compartido</small></div><b>'+eur(data.accounts.filter(a=>a.group==='conjunta'&&a.type==='Ahorro').reduce((n,a)=>n+Number(a.balance||0),0))+'</b></div><div class="row"><div><strong>Cuenta de gastos conjunta</strong><small>Dinero disponible para gastos de casa</small></div><b>'+eur(data.accounts.filter(a=>a.group==='conjunta'&&a.type==='Cuenta').reduce((n,a)=>n+Number(a.balance||0),0))+'</b></div></section>'+
 '<section class="grid"><div class="panel metric"><small class="muted">Ingresos este mes</small><b class="amount-in">'+eur(s.in)+'</b></div><div class="panel metric"><small class="muted">Gastos este mes</small><b class="amount-out">'+eur(s.out)+'</b></div></section>'+
 '<section class="panel"><h2>Ahorro registrado este mes</h2><div class="big" style="font-size:25px">'+eur(s.in-s.out)+'</div><div class="row"><span>Personal</span><b>'+eur(sp.in-sp.out)+'</b></div><div class="row"><span>Conjunta</span><b>'+eur(sc.in-sc.out)+'</b></div><small class="muted">Calculado con los ingresos y gastos que registres.</small></section>'+
@@ -205,7 +199,7 @@ const ms=monthMoves(statsGroup), totals=sums(statsGroup), categories=categorySta
 const maxCategory=Math.max(1,...categories.map(x=>x[1]));
 const groupLabel=statsGroup==='all'?'Todo':statsGroup==='personal'?'Personal':'Conjunta';
 const accounts=data.accounts.filter(a=>statsGroup==='all'||a.group===statsGroup);
-const invested=accounts.filter(a=>a.type==='Inversión').reduce((n,a)=>n+Number(a.balance||0),0);
+const invested=accounts.filter(a=>a.type==='Inversión').reduce((n,a)=>n+(Array.isArray(a.assets)?a.assets.reduce((v,x)=>v+(Number(x.value)||0),0):Number(a.balance)||0),0);
 const saved=accounts.filter(a=>a.type==='Ahorro').reduce((n,a)=>n+Number(a.balance||0),0);
 const cash=accounts.filter(a=>a.type==='Cuenta').reduce((n,a)=>n+Number(a.balance||0),0);
 app.innerHTML='<section class="panel"><h2>Análisis de '+groupLabel.toLowerCase()+'</h2><p class="note">Resumen de tus ingresos y gastos registrados durante este mes.</p><div class="tabs"><button type="button" data-stats-group="all" class="'+(statsGroup==='all'?'pillactive':'pillidle')+'">Todo</button><button type="button" data-stats-group="personal" class="'+(statsGroup==='personal'?'pillactive':'pillidle')+'">Personal</button><button type="button" data-stats-group="conjunta" class="'+(statsGroup==='conjunta'?'pillactive':'pillidle')+'">Conjunta</button></div><div class="grid"><div class="metric"><small class="muted">Ingresos</small><b class="amount-in">'+eur(totals.in)+'</b></div><div class="metric"><small class="muted">Gastos</small><b class="amount-out">'+eur(totals.out)+'</b></div></div><div style="margin-top:14px"><small class="muted">Balance del mes</small><div class="big" style="font-size:27px;color:'+(totals.in-totals.out>=0?'#16804f':'var(--red)')+'">'+eur(totals.in-totals.out)+'</div></div></section>'+
@@ -223,6 +217,13 @@ app.innerHTML='<section class="panel"><h2>Mis cuentas</h2><p class="note" id="ac
 '<section class="panel"><h2>Sincronización</h2><div class="row"><div><strong>Estado de conexión</strong><small>Tus datos se guardan en Supabase y se comparten entre tus dispositivos.</small></div><span class="tag">'+synced+'</span></div><p class="note">Si realizas cambios, espera a que arriba aparezca «Sincronizado» antes de cerrar la aplicación.</p></section>'+
 '<section class="panel"><h2>Actualización de la aplicación</h2><p class="note">Si no ves los últimos cambios, pulsa este botón para buscar una versión nueva, actualizar los archivos guardados y volver a cargar Mi Patrimonio. Tus datos no se borran.</p><button type="button" id="forceUpdateBtn" style="width:100%">↻ Actualizar aplicación ahora</button><p id="forceUpdateMessage" class="note" aria-live="polite" style="margin-top:9px"></p></section>'+
 '<section class="panel"><h2>Copias de seguridad</h2><p class="note">Tus datos se sincronizan en la nube. Puedes descargar una copia manual, consultar las últimas 30 versiones guardadas automáticamente o importar un archivo.</p><button id="export" style="width:100%">Descargar copia actual</button><button id="loadBackups" class="secondary" style="width:100%;margin-top:10px">Ver copias automáticas</button><div id="backupList" style="margin-top:12px"></div><label style="display:block;margin-top:14px">Importar copia desde archivo</label><input type="file" id="import" accept=".json,application/json"></section>';
+const inv=investmentAccount();
+if(inv){
+ app.insertAdjacentHTML('beforeend','<section class="panel"><h2>Mis inversiones</h2><p class="note">Registra aquí cada fondo, ETF, acción o criptomoneda. El valor se suma a tu patrimonio y al gráfico exclusivo de inversiones.</p>'+ (inv.assets||[]).map(x=>'<div class="row"><div style="flex:1;min-width:0"><strong>'+esc(x.name)+'</strong><small>'+esc(x.ticker||'Sin símbolo')+' · '+esc(x.quantity||'Unidades pendientes')+'</small></div><b>'+eur(x.value)+'</b><button type="button" class="smallbtn danger" data-asset-delete="'+esc(x.id)+'">×</button></div>').join('')+'<form id="assetForm"><label>Nombre del activo</label><input name="name" required placeholder="Ej. Fondo S&P 500, Bitcoin, Apple"><label>Símbolo o ISIN (opcional)</label><input name="ticker" placeholder="Ej. LU1681048804, BTC, AAPL"><label>Participaciones o unidades (opcional)</label><input name="quantity" type="number" min="0" step="any" placeholder="Ej. 10"><label>Valor actual total (€)</label><input name="value" type="number" min="0" step=".01" required placeholder="Ej. 2580"><button type="submit" style="width:100%">＋ Añadir inversión</button></form><div class="row"><strong>Total inversiones</strong><strong>'+eur(inv.assets.reduce((n,x)=>n+(Number(x.value)||0),0))+'</strong></div></section>');
+ const form=document.getElementById('assetForm');
+ form.onsubmit=e=>{e.preventDefault();const f=new FormData(e.target);inv.assets=Array.isArray(inv.assets)?inv.assets:[];inv.assets.push({id:'asset-'+Date.now(),name:String(f.get('name')).trim(),ticker:String(f.get('ticker')||'').trim(),quantity:String(f.get('quantity')||'').trim(),value:Number(f.get('value'))||0});inv.balance=inv.assets.reduce((n,x)=>n+(Number(x.value)||0),0);save();render()};
+ document.querySelectorAll('[data-asset-delete]').forEach(btn=>btn.onclick=()=>{const x=inv.assets.find(v=>String(v.id)===btn.dataset.assetDelete);if(!x||!confirm('¿Eliminar «'+x.name+'»?'))return;inv.assets=inv.assets.filter(v=>String(v.id)!==btn.dataset.assetDelete);inv.balance=inv.assets.reduce((n,v)=>n+(Number(v.value)||0),0);save();render()});
+}
 document.getElementById('forceUpdateBtn').onclick=async()=>{
  const btn=document.getElementById('forceUpdateBtn'),msg=document.getElementById('forceUpdateMessage');
  btn.disabled=true;btn.textContent='Buscando actualización…';msg.textContent='Comprobando si hay una versión nueva. No cierres la aplicación.';
