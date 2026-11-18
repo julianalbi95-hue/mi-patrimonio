@@ -236,7 +236,21 @@ document.getElementById('loadBackups').onclick=async()=>{
 }
 document.querySelectorAll('[data-goal-delete]').forEach(b=>b.onclick=()=>{if(confirm('¿Eliminar objetivo?')){data.goals=data.goals.filter(g=>g.id!==Number(b.dataset.goalDelete));save();render()}});
 }
-function historyMarkup(filter,term=''){const q=String(term||'').trim().toLocaleLowerCase('es');const norm=v=>String(v??'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLocaleLowerCase('es');const list=data.moves.slice().reverse().filter(m=>{if(filter!=='all'&&(m.group||'personal')!==filter)return false;if(!q)return true;const account=data.accounts.find(a=>Number(a.id)===Number(m.account));const haystack=[m.name,m.category,m.date,m.kind,groupName(m.group||'personal'),account?.name||'Cuenta eliminada',m.amount].map(norm).join(' ');return haystack.includes(norm(q))});return list.map(m=>{const account=data.accounts.find(a=>Number(a.id)===Number(m.account));return '<div class="row"><div style="min-width:0"><strong>'+esc(m.name)+'</strong><small>'+esc(m.date)+' · '+esc(m.category)+' · '+groupName(m.group||'personal')+' · '+esc(account?.name||'Cuenta eliminada')+'</small></div><div style="text-align:right;white-space:nowrap"><b class="'+(m.kind==='Ingreso'?'amount-in':m.kind==='Gasto'?'amount-out':'')+'">'+(m.kind==='Gasto'?'−':m.kind==='Ingreso'?'+':'⇄')+eur(m.amount)+'</b><br><button class="smallbtn danger" data-delete-move="'+m.id+'">Borrar</button></div></div>'}).join('')||'<div class="empty">'+(q?'No se han encontrado movimientos.':'No hay movimientos en esta cuenta.')+'</div>'}
+function historyMarkup(filter,term=''){
+const norm=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+const q=norm(term).trim();
+const list=data.moves.slice().reverse().filter(m=>{
+ if(filter!=='all'&&(m.group||'personal')!==filter)return false;
+ if(!q)return true;
+ const account=data.accounts.find(a=>Number(a.id)===Number(m.account));
+ const haystack=[m.name,m.category,m.date,m.kind,groupName(m.group||'personal'),account?.name||'Cuenta eliminada',m.amount].map(norm).join(' ');
+ return haystack.includes(q);
+});
+return list.map(m=>{
+ const account=data.accounts.find(a=>Number(a.id)===Number(m.account));
+ return '<div class="row"><div style="min-width:0"><strong>'+esc(m.name)+'</strong><small>'+esc(m.date)+' · '+esc(m.category)+' · '+groupName(m.group||'personal')+' · '+esc(account?.name||'Cuenta eliminada')+'</small></div><div style="text-align:right;white-space:nowrap"><b class="'+(m.kind==='Ingreso'?'amount-in':m.kind==='Gasto'?'amount-out':'')+'">'+(m.kind==='Gasto'?'−':m.kind==='Ingreso'?'+':'⇄')+eur(m.amount)+'</b><br><button class="smallbtn danger" data-delete-move="'+m.id+'">Borrar</button></div></div>';
+}).join('')||'<div class="empty">'+(q?'No se han encontrado movimientos.':'No hay movimientos en esta cuenta.')+'</div>';
+}
 function wireHistory(){document.querySelectorAll('[data-delete-move]').forEach(b=>b.onclick=()=>{const m=data.moves.find(x=>x.id===Number(b.dataset.deleteMove));if(!m||!confirm('¿Borrar este movimiento? El saldo de la cuenta no se modificará automáticamente.'))return;data.moves=data.moves.filter(x=>x.id!==m.id);save();render()})}
 function openMovementModal(kind){
 const accounts=data.accounts;
