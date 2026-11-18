@@ -138,8 +138,18 @@ function homeChartsMarkup(){
  if(investmentTotal!==0)accounts.push({name:'Inversiones',value:investmentTotal,slice:Math.max(0,investmentTotal),color:palette[accounts.length%palette.length]});
  const totalValue=accounts.reduce((n,a)=>n+a.slice,0);
  let offset=0;const stops=accounts.map(a=>{const begin=offset;offset+=totalValue?a.slice/totalValue*100:0;return a.color+' '+begin+'% '+offset+'%'}).join(',');
- const donut=totalValue?'<div class="donut" style="background:conic-gradient('+stops+')"><div class="donut-center"><strong>'+eur(totalValue)+'</strong><span>Patrimonio</span></div></div>':'<div class="empty" style="padding:20px">Añade saldos positivos a tus cuentas para ver el gráfico.</div>';
- const legend=accounts.map(a=>'<div class="row"><div style="min-width:0;display:flex;align-items:center;gap:6px"><i class="legend-dot" style="background:'+a.color+';flex:0 0 9px"></i><span style="overflow-wrap:anywhere">'+esc(a.name)+'</span></div><strong style="white-space:nowrap">'+eur(a.value)+'</strong></div>').join('');
+ let labelOffset=0;
+ const donutLabels=accounts.map(a=>{
+  const pct=totalValue?a.slice/totalValue*100:0;
+  const middle=(labelOffset+pct/2)*3.6-90;
+  labelOffset+=pct;
+  if(pct<5)return '';
+  const rad=middle*Math.PI/180;
+  const left=71+49*Math.cos(rad),top=71+49*Math.sin(rad);
+  return '<span style="position:absolute;left:'+left+'px;top:'+top+'px;transform:translate(-50%,-50%);z-index:2;color:#fff;font-size:10px;font-weight:800;text-shadow:0 1px 3px #222,0 0 3px #222;pointer-events:none;white-space:nowrap">'+pct.toFixed(1).replace('.',',')+'%</span>';
+ }).join('');
+ const donut=totalValue?'<div class="donut" style="background:conic-gradient('+stops+')">'+donutLabels+'<div class="donut-center"><strong>'+eur(totalValue)+'</strong><span>Patrimonio</span></div></div>':'<div class="empty" style="padding:20px">Añade saldos positivos a tus cuentas para ver el gráfico.</div>';
+ const legend=accounts.map(a=>{const pct=totalValue?a.slice/totalValue*100:0;return '<div class="row"><div style="min-width:0;display:flex;align-items:center;gap:6px"><i class="legend-dot" style="background:'+a.color+';flex:0 0 9px"></i><span style="overflow-wrap:anywhere">'+esc(a.name)+'</span></div><strong style="white-space:nowrap">'+pct.toFixed(1).replace('.',',')+'% · '+eur(a.value)+'</strong></div>'}).join('');
  return '<section class="panel chart-card"><h2>Distribución de mi patrimonio</h2><p class="chart-subtitle">Las cuentas se muestran por separado, excepto las inversiones, que aparecen agrupadas.</p><div class="donut-wrap">'+donut+'<div class="donut-legend">'+(legend||'<div class="empty">Todavía no tienes cuentas.</div>')+'</div></div></section><section class="panel chart-card"><h2>Ingresos y gastos</h2><p class="chart-subtitle">Comparativa de los últimos seis meses, según los movimientos registrados.</p><div class="chart-bars">'+monthBars+'</div><div class="chart-legend"><span><i class="legend-dot" style="background:#26966b"></i>Ingresos</span><span><i class="legend-dot" style="background:#d76b6b"></i>Gastos</span></div></section>';
 }
 
