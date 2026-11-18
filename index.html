@@ -290,7 +290,7 @@ function applyLayoutEditor(){
 }
 function setupLayoutEditor(){
  const app=document.getElementById('app'),bar=document.getElementById('layoutEditorToolbar');if(!app||!bar)return;
- bar.querySelector('[data-layout-edit]')?.addEventListener('click',()=>{layoutEditing=true;applyLayoutEditor()});
+ bar.querySelector('[data-layout-edit]')?.addEventListener('click',()=>{layoutEditing=true;applyLayoutEditor();setupLayoutEditor()});
  bar.querySelector('[data-layout-cancel]')?.addEventListener('click',()=>{layoutEditing=false;render()});
  bar.querySelector('[data-layout-save]')?.addEventListener('click',()=>{data.layoutOrder=data.layoutOrder||{};data.layoutOrder[tab]=[...app.querySelectorAll(':scope > .layout-block')].map(el=>el.dataset.layoutId);save();layoutEditing=false;render()});
  bar.querySelector('[data-layout-reset]')?.addEventListener('click',()=>{if(!confirm('¿Restaurar el orden original de este apartado?'))return;if(data.layoutOrder)delete data.layoutOrder[tab];save();layoutEditing=false;render()});
