@@ -204,7 +204,31 @@ app.innerHTML='<section class="panel"><h2>Mis cuentas</h2><p class="note" id="ac
 '<section class="panel"><h2>Mi cuenta</h2><div class="row"><div><strong>Correo electrónico</strong><small>'+esc(email)+'</small></div><span class="tag">Activa</span></div><p class="note" style="margin-top:12px">Esta es la cuenta con la que accedes a Mi Patrimonio.</p></section>'+
 '<section class="panel"><h2>Cambiar contraseña</h2><p class="note">Elige una contraseña nueva. Te recomendamos que sea larga y que no la utilices en otros servicios.</p><form id="passwordForm"><label>Nueva contraseña</label><input name="password" type="password" autocomplete="new-password" minlength="8" required placeholder="Mínimo 8 caracteres"><label>Repite la nueva contraseña</label><input name="confirmPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="Vuelve a escribirla"><button id="passwordSave" style="width:100%">Actualizar contraseña</button><p id="passwordMessage" class="note" aria-live="polite"></p></form></section>'+
 '<section class="panel"><h2>Sincronización</h2><div class="row"><div><strong>Estado de conexión</strong><small>Tus datos se guardan en Supabase y se comparten entre tus dispositivos.</small></div><span class="tag">'+synced+'</span></div><p class="note">Si realizas cambios, espera a que arriba aparezca «Sincronizado» antes de cerrar la aplicación.</p></section>'+
+'<section class="panel"><h2>Actualización de la aplicación</h2><p class="note">Si no ves los últimos cambios, pulsa este botón para buscar una versión nueva, actualizar los archivos guardados y volver a cargar Mi Patrimonio. Tus datos no se borran.</p><button type="button" id="forceUpdateBtn" style="width:100%">↻ Actualizar aplicación ahora</button><p id="forceUpdateMessage" class="note" aria-live="polite" style="margin-top:9px"></p></section>'+
 '<section class="panel"><h2>Copias de seguridad</h2><p class="note">Tus datos se sincronizan en la nube. Puedes descargar una copia manual, consultar las últimas 30 versiones guardadas automáticamente o importar un archivo.</p><button id="export" style="width:100%">Descargar copia actual</button><button id="loadBackups" class="secondary" style="width:100%;margin-top:10px">Ver copias automáticas</button><div id="backupList" style="margin-top:12px"></div><label style="display:block;margin-top:14px">Importar copia desde archivo</label><input type="file" id="import" accept=".json,application/json"></section>';
+document.getElementById('forceUpdateBtn').onclick=async()=>{
+ const btn=document.getElementById('forceUpdateBtn'),msg=document.getElementById('forceUpdateMessage');
+ btn.disabled=true;btn.textContent='Buscando actualización…';msg.textContent='Comprobando si hay una versión nueva. No cierres la aplicación.';
+ let reloading=false;
+ const reload=()=>{if(reloading)return;reloading=true;msg.textContent='Actualización preparada. Recargando…';location.reload()};
+ if('serviceWorker' in navigator)navigator.serviceWorker.addEventListener('controllerchange',reload,{once:true});
+ try{
+  const reg=await navigator.serviceWorker.getRegistration();
+  if(reg){
+   await reg.update();
+   if(reg.waiting)reg.waiting.postMessage({type:'SKIP_WAITING'});
+   if(reg.installing){
+    const worker=reg.installing;
+    worker.addEventListener('statechange',()=>{if(worker.state==='installed'&&reg.waiting)reg.waiting.postMessage({type:'SKIP_WAITING'})});
+   }
+  }
+  msg.textContent='Comprobación terminada. Recargando la aplicación…';
+  setTimeout(reload,1800);
+ }catch(error){
+  msg.textContent='No se pudo comprobar la actualización. Voy a recargar la aplicación.';
+  setTimeout(reload,900);
+ }
+};
 document.querySelectorAll('[data-balance]').forEach(i=>i.onchange=()=>{const a=data.accounts.find(x=>x.id===Number(i.dataset.balance));if(a){a.balance=Number(i.value)||0;save();render()}});
 const addAccountModal=document.getElementById('addAccountModal');
 document.getElementById('addAccountBtn').onclick=()=>addAccountModal.classList.remove('hidden');
@@ -455,6 +479,6 @@ async function startApp(){
 document.getElementById('settingsBtn')?.addEventListener('click',()=>{tab='settings';render();});
 document.getElementById('logoutBtn')?.addEventListener('click',()=>supabaseClient?.auth.signOut());
 startApp();
-if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js?v=20').catch(()=>{});
+if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js?v=21').catch(()=>{});
 </script>
 </body></html>
