@@ -176,7 +176,7 @@ const synced=cloudReady?'Conectado y sincronizado':'Sin conexión confirmada';
 app.innerHTML='<section class="panel"><h2>Mi cuenta</h2><div class="row"><div><strong>Correo electrónico</strong><small>'+esc(email)+'</small></div><span class="tag">Activa</span></div><p class="note" style="margin-top:12px">Esta es la cuenta con la que accedes a Mi Patrimonio.</p></section>'+
 '<section class="panel"><h2>Cambiar contraseña</h2><p class="note">Elige una contraseña nueva. Te recomendamos que sea larga y que no la utilices en otros servicios.</p><form id="passwordForm"><label>Nueva contraseña</label><input name="password" type="password" autocomplete="new-password" minlength="8" required placeholder="Mínimo 8 caracteres"><label>Repite la nueva contraseña</label><input name="confirmPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="Vuelve a escribirla"><button id="passwordSave" style="width:100%">Actualizar contraseña</button><p id="passwordMessage" class="note" aria-live="polite"></p></form></section>'+
 '<section class="panel"><h2>Sincronización</h2><div class="row"><div><strong>Estado de conexión</strong><small>Tus datos se guardan en Supabase y se comparten entre tus dispositivos.</small></div><span class="tag">'+synced+'</span></div><p class="note">Si realizas cambios, espera a que arriba aparezca «Sincronizado» antes de cerrar la aplicación.</p></section>'+
-'<section class="panel"><h2>Copias de seguridad</h2><p class="note">Puedes consultar las versiones guardadas automáticamente y descargar una copia manual de tus datos.</p><button id="settingsBackups" class="secondary" style="width:100%">Gestionar copias de seguridad</button></section>';
+'<section class="panel"><h2>Copias de seguridad</h2><p class="note">Tus datos se sincronizan en la nube. Puedes descargar una copia manual, consultar las últimas 30 versiones guardadas automáticamente o importar un archivo.</p><button id="export" style="width:100%">Descargar copia actual</button><button id="loadBackups" class="secondary" style="width:100%;margin-top:10px">Ver copias automáticas</button><div id="backupList" style="margin-top:12px"></div><label style="display:block;margin-top:14px">Importar copia desde archivo</label><input type="file" id="import" accept=".json,application/json"></section>';
 document.getElementById('passwordForm').onsubmit=async e=>{
 e.preventDefault();const f=new FormData(e.target),password=String(f.get('password')||''),confirmation=String(f.get('confirmPassword')||''),btn=document.getElementById('passwordSave'),msg=document.getElementById('passwordMessage');
 if(password.length<8){msg.textContent='La contraseña debe tener al menos 8 caracteres.';return}
@@ -186,48 +186,7 @@ try{const {error}=await supabaseClient.auth.updateUser({password});if(error)thro
 catch(err){msg.textContent='No se ha podido actualizar la contraseña: '+err.message}
 finally{btn.disabled=false;btn.textContent='Actualizar contraseña'}
 };
-document.getElementById('settingsBackups').onclick=()=>{
-tab='stats';render();document.getElementById('loadBackups')?.click();document.getElementById('backupList')?.scrollIntoView({behavior:'smooth',block:'center'});
-};
-}else{
-const s=sums(statsGroup),sp=sums('personal'),sc=sums('conjunta'),moves=monthMoves(statsGroup),cats=categoryStats(moves),max=Math.max(1,...cats.map(x=>x[1]));
-const colors=['#3985d6','#16a085','#e5a13b','#9b79c9','#d66b6b','#5c9d91','#778899'];
-const months=Array.from({length:6},(_,i)=>{const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-(5-i));return d.toISOString().slice(0,7)});
-const monthData=months.map(m=>({m, ...sums(statsGroup,m)}));
-app.innerHTML='<section class="panel"><h2>Análisis de gastos y ahorro</h2><div class="tabs"><button class="'+(statsGroup==='all'?'pillactive':'pillidle')+'" data-sgroup="all">Global</button><button class="'+(statsGroup==='personal'?'pillactive':'pillidle')+'" data-sgroup="personal">Personal</button><button class="'+(statsGroup==='conjunta'?'pillactive':'pillidle')+'" data-sgroup="conjunta">Conjunta</button></div><div class="grid"><div class="metric"><small>Ingresos del mes</small><b class="amount-in">'+eur(s.in)+'</b></div><div class="metric"><small>Gastos del mes</small><b class="amount-out">'+eur(s.out)+'</b></div></div><div class="big" style="font-size:25px;margin-top:14px">Ahorro: '+eur(s.in-s.out)+'</div><small class="muted">Solo movimientos registrados en el mes actual.</small></section>'+
-'<section class="panel"><h2>¿En qué gasto?</h2>'+(cats.length?cats.map(([name,value],i)=>'<div class="statline"><div class="name">'+esc(name)+'</div><div class="bar"><i style="width:'+(value/max*100)+'%;background:'+colors[i%colors.length]+'"></i></div><div class="value">'+eur(value)+'</div></div>').join(''):'<div class="empty">Registra gastos para ver su distribución por categoría.</div>')+'</section>'+
-'<section class="panel"><h2>Ingresos, gastos y ahorro · últimos 6 meses</h2>'+monthData.map(x=>'<div style="margin:14px 0"><div class="row"><strong>'+esc(x.m)+'</strong><b class="'+(x.in-x.out>=0?'amount-in':'amount-out')+'">'+eur(x.in-x.out)+'</b></div><div class="statline"><div class="name">Ingresos</div><div class="bar"><i style="width:'+(x.in/Math.max(1,...monthData.map(y=>y.in))*100)+'%;background:#26966b"></i></div><div class="value">'+eur(x.in)+'</div></div><div class="statline"><div class="name">Gastos</div><div class="bar"><i style="width:'+(x.out/Math.max(1,...monthData.map(y=>y.out))*100)+'%;background:#c65b5b"></i></div><div class="value">'+eur(x.out)+'</div></div></div>').join('')+'</section>'+
-'<section class="panel"><h2>Comparación de cuentas</h2><div class="row"><span>Ahorro personal del mes</span><b>'+eur(sp.in-sp.out)+'</b></div><div class="row"><span>Ahorro conjunto del mes</span><b>'+eur(sc.in-sc.out)+'</b></div><div class="row"><span>Patrimonio personal</span><b>'+eur(groupTotal('personal'))+'</b></div><div class="row"><span>Patrimonio conjunto</span><b>'+eur(groupTotal('conjunta'))+'</b></div></section>'+
-'<section class="panel"><h2>Copias de seguridad</h2><p class="note">Tus datos se sincronizan en la nube. También puedes descargar una copia manual o consultar las últimas 30 versiones guardadas automáticamente.</p><button id="export" style="width:100%">Descargar copia actual</button><button id="loadBackups" class="secondary" style="width:100%;margin-top:10px">Ver copias automáticas</button><div id="backupList" style="margin-top:12px"></div><label style="display:block;margin-top:14px">Importar copia desde archivo</label><input type="file" id="import" accept=".json,application/json"></section>';
-document.querySelectorAll('[data-sgroup]').forEach(b=>b.onclick=()=>{statsGroup=b.dataset.sgroup;render()});
-document.getElementById('export').onclick=()=>{const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='mi-patrimonio-copia.json';a.click();URL.revokeObjectURL(url)};
-document.getElementById('import').onchange=async e=>{try{const file=e.target.files[0];if(!file)return;const obj=JSON.parse(await file.text());if(!obj.accounts||!obj.moves)throw Error();data=migrate(obj);save();render();alert('Copia restaurada correctamente.')}catch{alert('No se ha podido importar ese archivo.')}};
- document.getElementById('loadBackups').onclick=async()=>{
-  const list=document.getElementById('backupList');
-  if(!authSession){list.textContent='Inicia sesión para consultar tus copias.';return}
-  list.textContent='Cargando copias...';
-  try{
-   const {data:rows,error}=await supabaseClient.from('app_data_backups').select('id,created_at').eq('user_id',authSession.user.id).order('created_at',{ascending:false}).limit(30);
-   if(error)throw error;
-   if(!rows.length){list.textContent='Todavía no hay copias guardadas.';return}
-   list.innerHTML=rows.map(row=>'<div class="row" style="gap:10px"><div style="flex:1"><strong>'+new Date(row.created_at).toLocaleString('es-ES')+'</strong><small>Versión guardada</small></div><button class="smallbtn secondary" data-restore-backup="'+row.id+'">Restaurar</button></div>').join('');
-   list.querySelectorAll('[data-restore-backup]').forEach(btn=>btn.onclick=async()=>{
-    const id=Number(btn.dataset.restoreBackup);
-    if(!Number.isSafeInteger(id)||!confirm('¿Restaurar esta versión? Los datos actuales serán sustituidos. Antes de hacerlo, se guardará una copia de los datos actuales.'))return;
-    btn.disabled=true;btn.textContent='Restaurando...';
-    try{
-     const {data:backup,error:readError}=await supabaseClient.from('app_data_backups').select('data').eq('id',id).eq('user_id',authSession.user.id).single();
-     if(readError)throw readError;
-     if(!backup?.data||!Array.isArray(backup.data.accounts)||!Array.isArray(backup.data.moves))throw new Error('La copia no tiene un formato válido.');
-     const restored=migrate(backup.data);
-     const {error:updateError}=await supabaseClient.from('app_data').update({data:restored,updated_at:new Date().toISOString()}).eq('user_id',authSession.user.id);
-     if(updateError)throw updateError;
-     data=restored;localStorage.setItem(KEY,JSON.stringify(data));cloudReady=true;render();
-     alert('Copia restaurada correctamente. La versión que tenías antes también se ha guardado.');
-    }catch(err){console.error('Error al restaurar copia:',err);alert('No se ha podido restaurar la copia: '+(err.message||'Error desconocido'));btn.disabled=false;btn.textContent='Restaurar'}
-   });
-  }catch(err){console.error('Error al cargar copias:',err);list.textContent='No se han podido cargar las copias: '+err.message}
- };
+
 }
 document.querySelectorAll('[data-goal-delete]').forEach(b=>b.onclick=()=>{if(confirm('¿Eliminar objetivo?')){data.goals=data.goals.filter(g=>g.id!==Number(b.dataset.goalDelete));save();render()}});
 }
