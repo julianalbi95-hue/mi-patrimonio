@@ -37,10 +37,10 @@ input,select{width:100%;padding:12px;border:1px solid #d8e0dc;border-radius:11px
 <header><div class="top"><div><h1>Mi Patrimonio</h1><small>Tu centro de control financiero</small></div><div style="display:flex;align-items:center;gap:10px"><small id="syncStatus" style="font-size:11px"></small><button id="settingsBtn" class="smallbtn secondary hidden" type="button" aria-label="Configuración" title="Configuración">⚙️</button><button id="logoutBtn" class="smallbtn secondary hidden" type="button">Salir</button>💶</div></div></header>
 <main id="app"></main>
 <nav>
-<button data-tab="home" class="active"><span>⌂</span>Inicio</button>
+<button data-tab="home" class="active"><span>🏠</span>Inicio</button>
 <button data-tab="moves"><span>↕</span>Movimientos</button>
-<button data-tab="expiries"><span>◷</span>Vencimientos</button>
-<button data-tab="stats"><span>▥</span>Análisis</button>
+<button data-tab="expiries"><span>⏰</span>Vencimientos</button>
+<button data-tab="stats"><span>📊</span>Análisis</button>
 </nav>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -455,6 +455,6 @@ async function startApp(){
 document.getElementById('settingsBtn')?.addEventListener('click',()=>{tab='settings';render();});
 document.getElementById('logoutBtn')?.addEventListener('click',()=>supabaseClient?.auth.signOut());
 startApp();
-if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js?v=19').catch(()=>{});
+if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js?v=20').catch(()=>{});
 </script>
 </body></html>
