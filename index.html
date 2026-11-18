@@ -300,6 +300,7 @@ function renderCustomBlocks(){
 function applyLayoutEditor(){
  const app=document.getElementById('app');if(!app)return;
  app.querySelectorAll('.layout-editor-toolbar').forEach(x=>x.remove());
+ app.querySelectorAll('.layout-block-controls').forEach(x=>x.remove());
  const blocks=[...app.children].filter(el=>!el.classList.contains('modalback'));
  const used={};blocks.forEach(el=>{el.classList.add('layout-block');let heading=el.dataset.customBlockId?'grafica-'+el.dataset.customBlockId:el.classList.contains('hero')?'patrimonio-total':el.classList.contains('actionrow')?'acciones-rapidas':el.classList.contains('grid')?'indicadores-resumen':el.querySelector('h2')?.textContent?.trim()||el.querySelector('small')?.textContent?.trim()||'bloque';const slug=heading.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,48)||'bloque';used[slug]=(used[slug]||0)+1;el.dataset.layoutId=el.dataset.customBlockId?'custom-'+el.dataset.customBlockId:slug+'-'+used[slug];});
  const hidden=new Set(Array.isArray(data.layoutHidden?.[tab])?data.layoutHidden[tab]:[]);
@@ -449,6 +450,6 @@ async function startApp(){
 document.getElementById('settingsBtn')?.addEventListener('click',()=>{tab='settings';render();});
 document.getElementById('logoutBtn')?.addEventListener('click',()=>supabaseClient?.auth.signOut());
 startApp();
-if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js?v=17').catch(()=>{});
+if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js?v=18').catch(()=>{});
 </script>
 </body></html>
