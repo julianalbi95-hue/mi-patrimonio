@@ -280,7 +280,7 @@ function applyLayoutEditor(){
  const app=document.getElementById('app');if(!app)return;
  app.querySelectorAll('.layout-editor-toolbar').forEach(x=>x.remove());
  const blocks=[...app.children].filter(el=>!el.classList.contains('modalback'));
- blocks.forEach((el,i)=>{el.classList.add('layout-block');const heading=el.querySelector('h2')?.textContent?.trim()||el.querySelector('.big')?.textContent?.trim()||el.textContent.trim().slice(0,34)||'Bloque';const slug=heading.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,48)||'bloque';el.dataset.layoutId=slug+'-'+i;});
+ const used={};blocks.forEach(el=>{el.classList.add('layout-block');let heading=el.classList.contains('hero')?'patrimonio-total':el.classList.contains('actionrow')?'acciones-rapidas':el.classList.contains('grid')?'indicadores-resumen':el.querySelector('h2')?.textContent?.trim()||el.querySelector('small')?.textContent?.trim()||'bloque';const slug=heading.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,48)||'bloque';used[slug]=(used[slug]||0)+1;el.dataset.layoutId=slug+'-'+used[slug];});
  const saved=Array.isArray(data.layoutOrder?.[tab])?data.layoutOrder[tab]:[];
  if(saved.length){const rank=new Map(saved.map((id,i)=>[id,i]));blocks.sort((a,b)=>(rank.get(a.dataset.layoutId)??9999)-(rank.get(b.dataset.layoutId)??9999));blocks.forEach(el=>app.appendChild(el));}
  const bar=document.createElement('div');bar.className='layout-editor-toolbar';bar.id='layoutEditorToolbar';
