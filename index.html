@@ -59,8 +59,6 @@ d.goals=Array.isArray(d.goals)?d.goals:[];
 d.expiries=Array.isArray(d.expiries)?d.expiries:[];
 d.subscriptions=Array.isArray(d.subscriptions)?d.subscriptions:[];
 d.layoutOrder=d.layoutOrder&&typeof d.layoutOrder==='object'?d.layoutOrder:{};
-d.hiddenTabs=d.hiddenTabs&&typeof d.hiddenTabs==='object'?d.hiddenTabs:{};
-d.layoutPages=Array.isArray(d.layoutPages)?d.layoutPages:[];
 d.accounts.forEach(a=>{if(!a.group)a.group=/conjunta|casa|revolut/i.test(a.name)?'conjunta':'personal'});
 d.moves.forEach(m=>{
 if(!m.group){const a=d.accounts.find(x=>x.id===m.account);m.group=a?.group||'personal'}
@@ -135,11 +133,7 @@ function homeChartsMarkup(){
 }
 
 function render(){
-const nav=document.querySelector('nav');
-nav.querySelectorAll('button[data-tab]').forEach(b=>{b.hidden=!!data.hiddenTabs?.[b.dataset.tab];b.classList.toggle('active',b.dataset.tab===tab)});
-nav.querySelectorAll('[data-custom-tab]').forEach(b=>b.remove());
-(data.layoutPages||[]).forEach(p=>{if(p.hidden)return;const b=document.createElement('button');b.dataset.customTab=p.id;b.classList.toggle('active',tab===p.id);b.innerHTML='<span>▦</span>'+esc(p.name);nav.appendChild(b)});
-nav.style.justifyContent='space-around';
+document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
 const app=document.getElementById('app');
 if(tab==='home'){
 const s=sums(),sp=sums('personal'),sc=sums('conjunta');
@@ -196,9 +190,6 @@ app.innerHTML='<section class="panel"><h2>Análisis de '+groupLabel.toLowerCase(
 '<section class="panel"><h2>¿En qué gastas?</h2>'+(categories.length?categories.map(([name,amount])=>'<div class="statline"><div class="name">'+esc(name||'Sin categoría')+'</div><div class="bar"><i style="width:'+Math.max(2,amount/maxCategory*100)+'%;background:var(--orange)"></i></div><div class="value">'+eur(amount)+'</div></div>').join(''):'<div class="empty">Todavía no hay gastos registrados este mes. Cuando añadas movimientos, aquí aparecerá el desglose por categorías.</div>')+'</section>'+
 '<section class="panel"><h2>Composición de tu patrimonio</h2><div class="row"><span>Ahorro</span><b>'+eur(saved)+'</b></div><div class="row"><span>Cuentas</span><b>'+eur(cash)+'</b></div><div class="row"><span>Inversiones</span><b>'+eur(invested)+'</b></div><div class="row"><strong>Total</strong><strong>'+eur(accounts.reduce((n,a)=>n+Number(a.balance||0),0))+'</strong></div><p class="note">Se calcula con los saldos actuales de las cuentas seleccionadas.</p></section>';
 document.querySelectorAll('[data-stats-group]').forEach(b=>b.onclick=()=>{statsGroup=b.dataset.statsGroup;render()});
-}else if((data.layoutPages||[]).some(p=>p.id===tab)){
- const page=data.layoutPages.find(p=>p.id===tab);
- app.innerHTML='<section class="panel"><h2>'+esc(page.name)+'</h2><p class="note">Tu espacio personalizado. Añade gráficas desde el botón Editar, al final de esta página.</p></section>'+(page.charts||[]).map((type,i)=>customChartMarkup(type,i)).join('')||'<section class="panel"><div class="empty">Todavía no has añadido gráficas. Pulsa Editar para empezar.</div></section>';
 }else if(tab==='settings'){
 const email=authSession?.user?.email||'No disponible';
 const synced=cloudReady?'Conectado y sincronizado':'Sin conexión confirmada';
@@ -285,37 +276,6 @@ document.getElementById('loadBackups').onclick=async()=>{
  applyLayoutEditor();setupLayoutEditor();
 }
 
-function customChartMarkup(type,index){
- const titleMap={accounts:'Patrimonio por cuenta',history:'Evolución de ingresos y gastos',categories:'Gastos por categoría',composition:'Composición del patrimonio'};
- const title=titleMap[type]||'Gráfica';
- if(type==='accounts'){
-  const rows=data.accounts.filter(a=>Number(a.balance)!==0),max=Math.max(1,...rows.map(a=>Math.abs(Number(a.balance)||0)));
-  return '<section class="panel chart-card"><div class="row"><h2>'+title+'</h2><button class="smallbtn danger" data-chart-remove="'+index+'">Quitar</button></div>'+(rows.length?rows.map(a=>'<div class="statline"><div class="name">'+esc(a.name)+'</div><div class="bar"><i style="width:'+Math.max(2,Math.abs(Number(a.balance)||0)/max*100)+'%;background:var(--blue)"></i></div><div class="value">'+eur(a.balance)+'</div></div>').join(''):'<div class="empty">No hay saldos para mostrar.</div>')+'</section>';
- }
- if(type==='history'){
-  const months=[];const now=new Date();for(let i=5;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1),m=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'),v=sums('all',m);months.push({label:d.toLocaleDateString('es-ES',{month:'short'}),...v})}const max=Math.max(1,...months.flatMap(x=>[x.in,x.out]));
-  return '<section class="panel chart-card"><div class="row"><h2>'+title+'</h2><button class="smallbtn danger" data-chart-remove="'+index+'">Quitar</button></div><div class="chart-bars">'+months.map(x=>'<div class="chart-month"><div class="chart-pair"><i class="chart-bar income" style="height:'+Math.max(x.in?3:0,x.in/max*100)+'%"></i><i class="chart-bar expense" style="height:'+Math.max(x.out?3:0,x.out/max*100)+'%"></i></div><small>'+x.label+'</small></div>').join('')+'</div><div class="chart-legend"><span>🟢 Ingresos</span><span>🔴 Gastos</span></div></section>';
- }
- if(type==='categories'){
-  const rows=categoryStats(monthMoves()),max=Math.max(1,...rows.map(x=>x[1]));
-  return '<section class="panel chart-card"><div class="row"><h2>'+title+'</h2><button class="smallbtn danger" data-chart-remove="'+index+'">Quitar</button></div><p class="chart-subtitle">Mes actual</p>'+(rows.length?rows.map(([n,v])=>'<div class="statline"><div class="name">'+esc(n)+'</div><div class="bar"><i style="width:'+Math.max(2,v/max*100)+'%;background:var(--orange)"></i></div><div class="value">'+eur(v)+'</div></div>').join(''):'<div class="empty">No hay gastos registrados este mes.</div>')+'</section>';
- }
- if(type==='composition'){
-  const types=['Ahorro','Cuenta','Inversión','Deuda'],vals=types.map(t=>({name:t,value:data.accounts.filter(a=>a.type===t).reduce((n,a)=>n+Number(a.balance||0),0)})),max=Math.max(1,...vals.map(x=>Math.abs(x.value)));
-  return '<section class="panel chart-card"><div class="row"><h2>'+title+'</h2><button class="smallbtn danger" data-chart-remove="'+index+'">Quitar</button></div>'+vals.map(x=>'<div class="statline"><div class="name">'+x.name+'</div><div class="bar"><i style="width:'+Math.max(x.value?2:0,Math.abs(x.value)/max*100)+'%;background:var(--purple)"></i></div><div class="value">'+eur(x.value)+'</div></div>').join('')+'</section>';
- }
- return '';
-}
-function openLayoutManager(){
- const modal=document.createElement('div');modal.className='modalback';modal.id='layoutManagerModal';
- const core=[['home','Inicio'],['moves','Movimientos'],['expiries','Vencimientos'],['stats','Análisis']];
- modal.innerHTML='<section class="modalcard"><div class="modalhead"><h2>Personalizar pestañas</h2><button type="button" class="modalclose" data-layout-close>✕</button></div><p class="note">Oculta las secciones que no utilices. Sus datos no se borrarán.</p><h3 style="font-size:15px">Pestañas principales</h3>'+core.map(([id,name])=>'<label style="display:flex;align-items:center;gap:9px;margin:12px 0"><input type="checkbox" data-core-visible="'+id+'" '+(!data.hiddenTabs[id]?'checked':'')+' style="width:auto;margin:0">'+name+'</label>').join('')+'<h3 style="font-size:15px;margin-top:20px">Mis pestañas</h3>'+(data.layoutPages.map(p=>'<div class="row"><strong>'+esc(p.name)+'</strong><button type="button" class="smallbtn danger" data-page-delete="'+p.id+'">Eliminar</button></div>').join('')||'<p class="note">Todavía no has creado pestañas.</p>')+'<form id="newLayoutPageForm"><label>Nombre de la nueva pestaña</label><input name="pageName" maxlength="24" placeholder="Ej. Gráficas" required><button style="width:100%">＋ Crear pestaña</button></form><div style="display:flex;justify-content:flex-end;margin-top:14px"><button type="button" class="secondary" data-layout-close>Listo</button></div></section>';
- document.body.appendChild(modal);
- modal.querySelectorAll('[data-layout-close]').forEach(b=>b.onclick=()=>{modal.remove();render()});
- modal.querySelectorAll('[data-core-visible]').forEach(c=>c.onchange=()=>{const id=c.dataset.coreVisible;data.hiddenTabs[id]=!c.checked;if(tab===id&&!c.checked)tab='home';save();render();openLayoutManager()});
- modal.querySelectorAll('[data-page-delete]').forEach(b=>b.onclick=()=>{const id=b.dataset.pageDelete;if(!confirm('¿Eliminar esta pestaña personalizada y sus gráficas?'))return;data.layoutPages=data.layoutPages.filter(p=>p.id!==id);if(tab===id)tab='home';save();modal.remove();render();openLayoutManager()});
- modal.querySelector('#newLayoutPageForm').onsubmit=e=>{e.preventDefault();const name=new FormData(e.target).get('pageName').trim();if(!name)return;const id='custom-'+Date.now();data.layoutPages.push({id,name,charts:[]});tab=id;save();modal.remove();render()};
-}
 function applyLayoutEditor(){
  const app=document.getElementById('app');if(!app)return;
  app.querySelectorAll('.layout-editor-toolbar').forEach(x=>x.remove());
@@ -324,13 +284,12 @@ function applyLayoutEditor(){
  const saved=Array.isArray(data.layoutOrder?.[tab])?data.layoutOrder[tab]:[];
  if(saved.length){const rank=new Map(saved.map((id,i)=>[id,i]));blocks.sort((a,b)=>(rank.get(a.dataset.layoutId)??9999)-(rank.get(b.dataset.layoutId)??9999));blocks.forEach(el=>app.appendChild(el));}
  const bar=document.createElement('div');bar.className='layout-editor-toolbar';bar.id='layoutEditorToolbar';
- bar.innerHTML=layoutEditing?'<p><strong>Modo edición:</strong> arrastra los bloques para cambiar su orden en este apartado.</p><button type="button" class="smallbtn secondary" data-layout-manage>Pestañas y gráficas</button><button type="button" class="smallbtn" data-layout-save>Guardar orden</button><button type="button" class="smallbtn secondary" data-layout-cancel>Salir</button><button type="button" class="smallbtn danger" data-layout-reset>Restaurar</button>':'<button type="button" class="smallbtn secondary" data-layout-edit>Editar</button>';
+ bar.innerHTML=layoutEditing?'<p><strong>Modo edición:</strong> arrastra los bloques para cambiar su orden en este apartado.</p><button type="button" class="smallbtn" data-layout-save>Guardar orden</button><button type="button" class="smallbtn secondary" data-layout-cancel>Salir</button><button type="button" class="smallbtn danger" data-layout-reset>Restaurar</button>':'<button type="button" class="smallbtn secondary" data-layout-edit>Editar</button>';
  bar.style.margin='14px 0 24px';app.appendChild(bar);app.classList.toggle('layout-editing',layoutEditing);if(!layoutEditing)return;
  let dragged=null;blocks.forEach(el=>{el.draggable=true;el.addEventListener('dragstart',e=>{dragged=el;el.classList.add('dragging');e.dataTransfer.effectAllowed='move'});el.addEventListener('dragend',()=>{el.classList.remove('dragging');dragged=null});el.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move'});el.addEventListener('drop',e=>{e.preventDefault();if(!dragged||dragged===el)return;const rect=el.getBoundingClientRect(),after=e.clientY>rect.top+rect.height/2;app.insertBefore(dragged,after?el.nextSibling:el)});});
 }
 function setupLayoutEditor(){
  const app=document.getElementById('app'),bar=document.getElementById('layoutEditorToolbar');if(!app||!bar)return;
- bar.querySelector('[data-layout-manage]')?.addEventListener('click',()=>{if((data.layoutPages||[]).some(p=>p.id===tab)){const modal=document.createElement('div');modal.className='modalback';modal.innerHTML='<section class="modalcard"><div class="modalhead"><h2>Añadir gráfica</h2><button class="modalclose" type="button" data-chart-close>✕</button></div><form id="addCustomChartForm"><label>Tipo de gráfica</label><select name="chart"><option value="accounts">Patrimonio por cuenta</option><option value="history">Evolución de ingresos y gastos</option><option value="categories">Gastos por categoría</option><option value="composition">Composición del patrimonio</option></select><button style="width:100%">Añadir gráfica</button></form></section>';document.body.appendChild(modal);modal.querySelector('[data-chart-close]').onclick=()=>modal.remove();modal.querySelector('form').onsubmit=e=>{e.preventDefault();const page=data.layoutPages.find(p=>p.id===tab);page.charts=page.charts||[];page.charts.push(new FormData(e.target).get('chart'));save();modal.remove();layoutEditing=false;render()};}else openLayoutManager()});
  bar.querySelector('[data-layout-edit]')?.addEventListener('click',()=>{layoutEditing=true;applyLayoutEditor();setupLayoutEditor()});
  bar.querySelector('[data-layout-cancel]')?.addEventListener('click',()=>{layoutEditing=false;render()});
  bar.querySelector('[data-layout-save]')?.addEventListener('click',()=>{data.layoutOrder=data.layoutOrder||{};data.layoutOrder[tab]=[...app.querySelectorAll(':scope > .layout-block')].map(el=>el.dataset.layoutId);save();layoutEditing=false;render()});
@@ -379,8 +338,7 @@ save();modal.remove();render();
 }
 
 document.addEventListener('click',e=>{const add=e.target.closest('[data-add-move]');if(add)openMovementModal(add.dataset.addMove)});
-document.querySelector('nav').addEventListener('click',e=>{const b=e.target.closest('button[data-tab],button[data-custom-tab]');if(!b)return;tab=b.dataset.tab||b.dataset.customTab;layoutEditing=false;render()});
-document.addEventListener('click',e=>{const remove=e.target.closest('[data-chart-remove]');if(!remove)return;const page=data.layoutPages.find(p=>p.id===tab);if(!page)return;const index=Number(remove.dataset.chartRemove);if(!confirm('¿Quitar esta gráfica de la pestaña?'))return;page.charts.splice(index,1);save();render()});
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render()});
 document.addEventListener('click',e=>{
  const add=e.target.closest('#addGoalBtn'),del=e.target.closest('#deleteGoalBtn');
  const closeAdd=e.target.closest('#closeAddGoal'),closeDelete=e.target.closest('#closeDeleteGoal');
@@ -445,6 +403,6 @@ async function startApp(){
 document.getElementById('settingsBtn')?.addEventListener('click',()=>{tab='settings';render();});
 document.getElementById('logoutBtn')?.addEventListener('click',()=>supabaseClient?.auth.signOut());
 startApp();
-if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js?v=14').catch(()=>{});
+if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js?v=16').catch(()=>{});
 </script>
 </body></html>
