@@ -30,6 +30,7 @@ input,select{width:100%;padding:12px;border:1px solid #d8e0dc;border-radius:11px
 /* Editor visual de distribución */
 .layout-block-controls [data-layout-hide]{font-size:12px;min-height:32px}.layout-block-controls [data-layout-show]{font-size:12px;min-height:32px}.layout-editing .layout-hidden{background:#f0f2f1;border:1px dashed #9aa59f}.layout-editing .layout-hidden>*:not(.layout-block-controls){pointer-events:none}.layout-editing .layout-hidden .layout-block-controls{pointer-events:auto}
 .layout-editor-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 12px;margin:0 0 12px;background:#edf5f0;border:1px dashed #8ab5a0;border-radius:13px}.layout-editor-toolbar p{flex:1;min-width:170px;margin:0;font-size:12px;color:var(--muted)}.layout-editing .layout-block{outline:2px dashed #8ab5a0;outline-offset:3px;cursor:grab;position:relative}.layout-editing .layout-block:active{cursor:grabbing}.layout-block.dragging{opacity:.45}.layout-block-controls{display:flex;align-items:center;justify-content:flex-end;gap:7px;margin-top:12px;padding-top:9px;border-top:1px solid var(--line)}.layout-block-controls button{min-width:38px;min-height:36px;padding:6px 11px;background:var(--mint);color:var(--green);font-size:18px;touch-action: manipulation}.layout-block-controls .layout-drag-handle{font-size:20px;min-width:46px;min-height:42px;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}.layout-block-controls .layout-control-label{font-size:11px;color:var(--muted);margin-right:auto}.layout-editing{touch-action:pan-y}.layout-editing .layout-block.dragging{opacity:.55}
+#settingsBtn{background:transparent!important;color:var(--ink);border:0!important;box-shadow:none!important;padding:4px;font-size:27px;line-height:1;min-width:40px;min-height:40px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center}#settingsBtn:active{background:var(--mint)!important}
 </style>
 </head>
 <body>
@@ -454,6 +455,6 @@ async function startApp(){
 document.getElementById('settingsBtn')?.addEventListener('click',()=>{tab='settings';render();});
 document.getElementById('logoutBtn')?.addEventListener('click',()=>supabaseClient?.auth.signOut());
 startApp();
-if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js?v=18').catch(()=>{});
+if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js?v=19').catch(()=>{});
 </script>
 </body></html>
