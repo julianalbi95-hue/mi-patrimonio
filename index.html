@@ -33,7 +33,6 @@ input,select{width:100%;padding:12px;border:1px solid #d8e0dc;border-radius:11px
 <button data-tab="home" class="active"><span>⌂</span>Inicio</button>
 <button data-tab="moves"><span>↕</span>Movimientos</button>
 <button data-tab="expiries"><span>◷</span>Vencimientos</button>
-<button data-tab="goals"><span>◎</span>Objetivos</button>
 <button data-tab="stats"><span>▥</span>Análisis</button>
 </nav>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -123,7 +122,9 @@ app.innerHTML='<section class="panel hero"><small>Patrimonio total</small><div c
 '<section class="grid"><div class="panel metric"><small class="muted">Ingresos este mes</small><b class="amount-in">'+eur(s.in)+'</b></div><div class="panel metric"><small class="muted">Gastos este mes</small><b class="amount-out">'+eur(s.out)+'</b></div></section>'+
 '<section class="panel"><h2>Ahorro registrado este mes</h2><div class="big" style="font-size:25px">'+eur(s.in-s.out)+'</div><div class="row"><span>Personal</span><b>'+eur(sp.in-sp.out)+'</b></div><div class="row"><span>Conjunta</span><b>'+eur(sc.in-sc.out)+'</b></div><small class="muted">Calculado con los ingresos y gastos que registres.</small></section>'+
 '<section class="panel"><h2>Mis cuentas</h2>'+data.accounts.map(a=>'<div class="row"><div><strong>'+esc(a.name)+'</strong><small>'+groupName(a.group)+' · '+esc(a.type)+'</small></div><b>'+eur(a.balance)+'</b></div>').join('')+'</section>'+
-'<section class="panel"><h2>Objetivo principal</h2>'+goalMarkup(data.goals[0])+'</section>';
+'<section class="panel"><h2>Mis objetivos de ahorro</h2>'+ (data.goals.length?data.goals.map(g=>'<div style="margin:14px 0"><strong>'+esc(g.name)+'</strong><div class="big" style="font-size:24px">'+eur(g.current)+' <small class="muted" style="font-size:14px">/ '+eur(g.target)+'</small></div><div class="bar"><i style="width:'+Math.min(100,g.current/Math.max(1,g.target)*100)+'%;background:#26966b"></i></div><small class="muted">'+Math.round(Math.min(100,g.current/Math.max(1,g.target)*100))+'% completado · Faltan '+eur(Math.max(0,g.target-g.current))+'</small></div>').join(''):'<div class="empty">Todavía no tienes objetivos de ahorro.</div>')+'<div class="actionrow" style="margin-top:14px"><button type="button" id="addGoalBtn">＋ Añadir objetivo</button><button type="button" class="danger" id="deleteGoalBtn">− Eliminar objetivo</button></div></section>'+
+'<div class="modalback hidden" id="addGoalModal"><section class="modalcard"><div class="modalhead"><h2>Nuevo objetivo</h2><button type="button" class="modalclose" id="closeAddGoal">✕</button></div><form id="goalForm"><label>Nombre</label><input name="name" placeholder="Ej. Viaje, coche, colchón..." required><label>Importe objetivo (€)</label><input name="target" type="number" min="1" step=".01" required><label>Ahorrado actualmente (€)</label><input name="current" type="number" min="0" step=".01" value="0"><button style="width:100%">Guardar objetivo</button></form></section></div>'+
+'<div class="modalback hidden" id="deleteGoalModal"><section class="modalcard"><div class="modalhead"><h2>Eliminar objetivo</h2><button type="button" class="modalclose" id="closeDeleteGoal">✕</button></div>'+(data.goals.length?'<form id="deleteGoalForm"><label>Selecciona el objetivo que quieres eliminar</label><select name="goalId" required>'+data.goals.map(g=>'<option value="'+g.id+'">'+esc(g.name)+'</option>').join('')+'</select><button type="submit" class="danger" style="width:100%">Eliminar objetivo</button></form>':'<p class="empty">No tienes objetivos para eliminar.</p>')+'</section></div>';
 }else if(tab==='moves'){
 app.innerHTML='<section class="panel"><div class="modalhead"><h2>Movimientos</h2><button type="button" class="smallbtn secondary" id="toggleMoveSearch" aria-label="Buscar movimientos" title="Buscar movimientos">🔍</button></div><p class="note">Aquí tienes todos los ingresos, gastos y transferencias que has registrado.</p><div id="moveSearchWrap" class="'+(movesSearchOpen?'':'hidden')+'"><input id="moveSearchInput" type="search" placeholder="Buscar por concepto, categoría, cuenta..." value="'+esc(movesSearchTerm)+'" aria-label="Buscar movimientos" style="margin:4px 0 12px"></div><div class="tabs"><button class="'+(movesFilter==='all'?'pillactive':'pillidle')+'" data-filter="all">Todos</button><button class="'+(movesFilter==='personal'?'pillactive':'pillidle')+'" data-filter="personal">Personal</button><button class="'+(movesFilter==='conjunta'?'pillactive':'pillidle')+'" data-filter="conjunta">Conjunta</button></div><div id="history">'+historyMarkup(movesFilter,movesSearchTerm)+'</div></section>';
 document.getElementById('toggleMoveSearch').onclick=()=>{movesSearchOpen=!movesSearchOpen;document.getElementById('moveSearchWrap').classList.toggle('hidden',!movesSearchOpen);if(movesSearchOpen)document.getElementById('moveSearchInput').focus();else{movesSearchTerm='';document.getElementById('moveSearchInput').value='';document.getElementById('history').innerHTML=historyMarkup(movesFilter,'');wireHistory()}};
@@ -147,11 +148,6 @@ app.innerHTML='<section class="panel"><h2>Documentos y vencimientos</h2><p class
 document.getElementById('expiryForm').onsubmit=e=>{e.preventDefault();const f=new FormData(e.target);data.expiries.push({id:Date.now(),name:f.get('name').trim(),category:f.get('category'),date:f.get('date'),notes:f.get('notes').trim()});save();render()};
 document.querySelectorAll('[data-expiry-delete]').forEach(b=>b.onclick=()=>{if(confirm('¿Eliminar este vencimiento?')){data.expiries=data.expiries.filter(x=>x.id!==Number(b.dataset.expiryDelete));save();render()}});
 document.querySelectorAll('[data-expiry-edit]').forEach(b=>b.onclick=()=>{const x=data.expiries.find(v=>v.id===Number(b.dataset.expiryEdit));if(!x)return;const name=prompt('Nombre',x.name);if(name===null)return;const date=prompt('Fecha (AAAA-MM-DD)',x.date);if(date===null)return;const notes=prompt('Notas',x.notes||'');if(notes===null)return;if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)){alert('Introduce la fecha con formato AAAA-MM-DD.');return}x.name=name.trim()||x.name;x.date=date;x.notes=notes.trim();save();render()});
-}else if(tab==='goals'){
-app.innerHTML='<section class="panel"><h2>Mis objetivos de ahorro</h2>'+data.goals.map(g=>'<div style="margin:14px 0"><strong>'+esc(g.name)+'</strong><div class="big" style="font-size:24px">'+eur(g.current)+' <small class="muted" style="font-size:14px">/ '+eur(g.target)+'</small></div><div class="bar"><i style="width:'+Math.min(100,g.current/Math.max(1,g.target)*100)+'%;background:#26966b"></i></div><small class="muted">'+Math.round(Math.min(100,g.current/Math.max(1,g.target)*100))+'% completado · Faltan '+eur(Math.max(0,g.target-g.current))+'</small><div style="display:flex;gap:8px;margin-top:8px"><button class="secondary smallbtn" data-goal-edit="'+g.id+'">Editar</button><button class="danger smallbtn" data-goal-delete="'+g.id+'">Eliminar</button></div></div>').join('')||'<div class="empty">Crea un objetivo de ahorro.</div>'+'</section>'+
-'<section class="panel"><h2>Crear objetivo</h2><form id="goalForm"><label>Nombre</label><input name="name" required><label>Importe objetivo (€)</label><input name="target" type="number" min="1" required><label>Ahorrado actualmente (€)</label><input name="current" type="number" min="0" value="0"><button style="width:100%">Crear objetivo</button></form></section>';
-document.getElementById('goalForm').onsubmit=e=>{e.preventDefault();let f=new FormData(e.target);data.goals.push({id:Date.now(),name:f.get('name'),target:Number(f.get('target')),current:Number(f.get('current'))||0});save();render()};
-document.querySelectorAll('[data-goal-edit]').forEach(b=>b.onclick=()=>{let g=data.goals.find(x=>x.id===Number(b.dataset.goalEdit)),n=prompt('Nombre',g.name),t=prompt('Objetivo en euros',g.target),c=prompt('Cantidad acumulada',g.current);if(n===null||t===null||c===null)return;g.name=n;g.target=Number(t)||g.target;g.current=Number(c)||0;save();render()});
 }else if(tab==='settings'){
 const email=authSession?.user?.email||'No disponible';
 const synced=cloudReady?'Conectado y sincronizado':'Sin conexión confirmada';
@@ -234,7 +230,7 @@ document.getElementById('loadBackups').onclick=async()=>{
  }catch(err){console.error('Error al cargar copias:',err);list.textContent='No se han podido cargar las copias: '+err.message}
 };
 }
-document.querySelectorAll('[data-goal-delete]').forEach(b=>b.onclick=()=>{if(confirm('¿Eliminar objetivo?')){data.goals=data.goals.filter(g=>g.id!==Number(b.dataset.goalDelete));save();render()}});
+
 }
 function historyMarkup(filter,term=''){
 const norm=v=>String(v??'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[\u200B-\u200D\uFEFF]/g,'').toLowerCase().replace(/[\s\u00A0]+/g,'');
@@ -279,6 +275,16 @@ save();modal.remove();render();
 
 document.addEventListener('click',e=>{const add=e.target.closest('[data-add-move]');if(add)openMovementModal(add.dataset.addMove)});
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render()});
+if(tab==='home'){
+ const addModal=document.getElementById('addGoalModal'),deleteModal=document.getElementById('deleteGoalModal');
+ document.getElementById('addGoalBtn').onclick=()=>addModal.classList.remove('hidden');
+ document.getElementById('deleteGoalBtn').onclick=()=>deleteModal.classList.remove('hidden');
+ document.getElementById('closeAddGoal').onclick=()=>addModal.classList.add('hidden');
+ document.getElementById('closeDeleteGoal').onclick=()=>deleteModal.classList.add('hidden');
+ document.getElementById('goalForm').onsubmit=e=>{e.preventDefault();const f=new FormData(e.target);const name=String(f.get('name')||'').trim(),target=Number(f.get('target')),current=Number(f.get('current'))||0;if(!name||!Number.isFinite(target)||target<=0||!Number.isFinite(current)||current<0){alert('Revisa el nombre y los importes del objetivo.');return}data.goals.push({id:Date.now(),name,target,current});save();render()};
+ const deleteForm=document.getElementById('deleteGoalForm');
+ if(deleteForm)deleteForm.onsubmit=e=>{e.preventDefault();const id=Number(new FormData(e.target).get('goalId'));const goal=data.goals.find(g=>Number(g.id)===id);if(!goal)return;if(!confirm('¿Seguro que quieres eliminar el objetivo «'+goal.name+'»?'))return;data.goals=data.goals.filter(g=>Number(g.id)!==id);save();render()};
+}
 function showLogin(message=''){
  document.querySelector('nav').classList.add('hidden');
  document.getElementById('logoutBtn')?.classList.add('hidden');
