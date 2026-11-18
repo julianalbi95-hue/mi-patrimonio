@@ -128,12 +128,19 @@ function homeChartsMarkup(){
  const maxValue=Math.max(1,...monthData.flatMap(x=>[x.income,x.expense]));
  const monthBars=monthData.map(x=>{const label=new Date(Number(x.month.slice(0,4)),Number(x.month.slice(5,7))-1,1).toLocaleDateString('es-ES',{month:'short'}).replace('.','');return '<div class="chart-month"><div class="chart-pair"><i class="chart-bar income" title="Ingresos: '+eur(x.income)+'" style="height:'+Math.max(x.income?3:0,x.income/maxValue*100)+'%"></i><i class="chart-bar expense" title="Gastos: '+eur(x.expense)+'" style="height:'+Math.max(x.expense?3:0,x.expense/maxValue*100)+'%"></i></div><small>'+label+'</small></div>'}).join('');
  const palette=['#26966b','#4787bd','#9274bb','#d69a43','#d76b6b','#269ca5','#8a9b45','#b47b9d','#6d7c91','#c18b55'];
- const accounts=data.accounts.map((a,i)=>({name:a.name,value:Number(a.balance)||0,slice:Math.max(0,Number(a.balance)||0),color:palette[i%palette.length]}));
+ const accounts=[];
+ let investmentTotal=0;
+ data.accounts.forEach((a,i)=>{
+  const value=Number(a.balance)||0;
+  if(a.type==='Inversión')investmentTotal+=value;
+  else accounts.push({name:a.name,value,slice:Math.max(0,value),color:palette[i%palette.length]});
+ });
+ if(investmentTotal!==0)accounts.push({name:'Inversiones',value:investmentTotal,slice:Math.max(0,investmentTotal),color:palette[accounts.length%palette.length]});
  const totalValue=accounts.reduce((n,a)=>n+a.slice,0);
  let offset=0;const stops=accounts.map(a=>{const begin=offset;offset+=totalValue?a.slice/totalValue*100:0;return a.color+' '+begin+'% '+offset+'%'}).join(',');
  const donut=totalValue?'<div class="donut" style="background:conic-gradient('+stops+')"><div class="donut-center"><strong>'+eur(totalValue)+'</strong><span>Patrimonio</span></div></div>':'<div class="empty" style="padding:20px">Añade saldos positivos a tus cuentas para ver el gráfico.</div>';
  const legend=accounts.map(a=>'<div class="row"><div style="min-width:0;display:flex;align-items:center;gap:6px"><i class="legend-dot" style="background:'+a.color+';flex:0 0 9px"></i><span style="overflow-wrap:anywhere">'+esc(a.name)+'</span></div><strong style="white-space:nowrap">'+eur(a.value)+'</strong></div>').join('');
- return '<section class="panel chart-card"><h2>Distribución de mi patrimonio</h2><p class="chart-subtitle">Cada porción representa una de las cuentas que tienes guardadas en Ajustes.</p><div class="donut-wrap">'+donut+'<div class="donut-legend">'+(legend||'<div class="empty">Todavía no tienes cuentas.</div>')+'</div></div></section><section class="panel chart-card"><h2>Ingresos y gastos</h2><p class="chart-subtitle">Comparativa de los últimos seis meses, según los movimientos registrados.</p><div class="chart-bars">'+monthBars+'</div><div class="chart-legend"><span><i class="legend-dot" style="background:#26966b"></i>Ingresos</span><span><i class="legend-dot" style="background:#d76b6b"></i>Gastos</span></div></section>';
+ return '<section class="panel chart-card"><h2>Distribución de mi patrimonio</h2><p class="chart-subtitle">Las cuentas se muestran por separado, excepto las inversiones, que aparecen agrupadas.</p><div class="donut-wrap">'+donut+'<div class="donut-legend">'+(legend||'<div class="empty">Todavía no tienes cuentas.</div>')+'</div></div></section><section class="panel chart-card"><h2>Ingresos y gastos</h2><p class="chart-subtitle">Comparativa de los últimos seis meses, según los movimientos registrados.</p><div class="chart-bars">'+monthBars+'</div><div class="chart-legend"><span><i class="legend-dot" style="background:#26966b"></i>Ingresos</span><span><i class="legend-dot" style="background:#d76b6b"></i>Gastos</span></div></section>';
 }
 
 function render(){
