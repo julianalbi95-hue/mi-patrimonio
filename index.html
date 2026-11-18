@@ -26,6 +26,9 @@ input,select{width:100%;padding:12px;border:1px solid #d8e0dc;border-radius:11px
 .bar{height:10px;background:#e8eeeb;border-radius:99px;overflow:hidden;flex:1}.bar i{display:block;height:100%;border-radius:99px}.statline{display:flex;align-items:center;gap:9px;margin:12px 0}.statline .name{width:105px;font-size:13px;overflow-wrap:anywhere}.statline .value{width:82px;text-align:right;font-size:13px;font-weight:650}.tabs{display:flex;gap:8px;margin-bottom:12px}.tabs button{flex:1}.pillactive{background:var(--green);color:#fff}.pillidle{background:var(--mint);color:var(--green)}
 
 .chart-card{margin-top:14px}.chart-subtitle{font-size:12px;color:var(--muted);margin:-5px 0 14px}.chart-bars{height:142px;display:flex;align-items:flex-end;justify-content:space-around;gap:8px;padding:8px 2px 0;border-bottom:1px solid var(--line)}.chart-month{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:6px}.chart-pair{height:112px;width:100%;display:flex;align-items:flex-end;justify-content:center;gap:4px}.chart-bar{width:min(34%,18px);min-height:2px;border-radius:5px 5px 0 0}.chart-bar.income{background:#26966b}.chart-bar.expense{background:#d76b6b}.chart-month small{font-size:10px;color:var(--muted)}.chart-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--muted)}.legend-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}.donut-wrap{display:flex;align-items:center;gap:18px;flex-wrap:wrap}.donut{width:142px;height:142px;flex:0 0 142px;border-radius:50%;position:relative}.donut:after{content:'';position:absolute;inset:27px;background:white;border-radius:50%}.donut-center{position:absolute;inset:0;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;color:var(--muted)}.donut-center strong{font-size:15px;color:var(--ink)}.donut-legend{flex:1;min-width:140px}.donut-legend .row{padding:7px 0;font-size:12px}.donut-legend .row strong{font-size:12px}
+
+/* Editor visual de distribución */
+.layout-editor-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 12px;margin:0 0 12px;background:#edf5f0;border:1px dashed #8ab5a0;border-radius:13px}.layout-editor-toolbar p{flex:1;min-width:170px;margin:0;font-size:12px;color:var(--muted)}.layout-editing .layout-block{outline:2px dashed #8ab5a0;outline-offset:3px;cursor:grab;position:relative}.layout-editing .layout-block:active{cursor:grabbing}.layout-block.dragging{opacity:.45}
 </style>
 </head>
 <body>
@@ -55,6 +58,7 @@ d.moves=Array.isArray(d.moves)?d.moves:[];
 d.goals=Array.isArray(d.goals)?d.goals:[];
 d.expiries=Array.isArray(d.expiries)?d.expiries:[];
 d.subscriptions=Array.isArray(d.subscriptions)?d.subscriptions:[];
+d.layoutOrder=d.layoutOrder&&typeof d.layoutOrder==='object'?d.layoutOrder:{};
 d.accounts.forEach(a=>{if(!a.group)a.group=/conjunta|casa|revolut/i.test(a.name)?'conjunta':'personal'});
 d.moves.forEach(m=>{
 if(!m.group){const a=d.accounts.find(x=>x.id===m.account);m.group=a?.group||'personal'}
@@ -64,7 +68,7 @@ if(!m.month){const p=m.date.split('/');m.month=p.length===3?p[2]+'-'+p[1].padSta
 return d;
 }
 let data;try{data=migrate(JSON.parse(localStorage.getItem(KEY))||structuredClone(initial))}catch{data=structuredClone(initial)}
-let tab='home',statsGroup='all',movesFilter='all',movesSearchOpen=false,movesSearchTerm='',selectedMovesMonth=new Date().toISOString().slice(0,7),movesMonthDetail=null;
+let tab='home',statsGroup='all',movesFilter='all',movesSearchOpen=false,movesSearchTerm='',selectedMovesMonth=new Date().toISOString().slice(0,7),movesMonthDetail=null,layoutEditing=false;
 const eur=n=>Number(n||0).toLocaleString('es-ES',{style:'currency',currency:'EUR'});
 let supabaseClient=null, authSession=null, cloudReady=false, cloudSaveTimer=null;
 const SUPABASE_URL='https://ulheujreaunsahulnxeb.supabase.co';
@@ -269,7 +273,29 @@ document.getElementById('loadBackups').onclick=async()=>{
 };
 }
 
+ applyLayoutEditor();setupLayoutEditor();
 }
+
+function applyLayoutEditor(){
+ const app=document.getElementById('app');if(!app)return;
+ app.querySelectorAll('.layout-editor-toolbar').forEach(x=>x.remove());
+ const blocks=[...app.children].filter(el=>!el.classList.contains('modalback'));
+ blocks.forEach((el,i)=>{el.classList.add('layout-block');const heading=el.querySelector('h2')?.textContent?.trim()||el.querySelector('.big')?.textContent?.trim()||el.textContent.trim().slice(0,34)||'Bloque';const slug=heading.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,48)||'bloque';el.dataset.layoutId=slug+'-'+i;});
+ const saved=Array.isArray(data.layoutOrder?.[tab])?data.layoutOrder[tab]:[];
+ if(saved.length){const rank=new Map(saved.map((id,i)=>[id,i]));blocks.sort((a,b)=>(rank.get(a.dataset.layoutId)??9999)-(rank.get(b.dataset.layoutId)??9999));blocks.forEach(el=>app.appendChild(el));}
+ const bar=document.createElement('div');bar.className='layout-editor-toolbar';bar.id='layoutEditorToolbar';
+ bar.innerHTML=layoutEditing?'<p><strong>Modo edición:</strong> arrastra los bloques para cambiar su orden en este apartado.</p><button type="button" class="smallbtn" data-layout-save>Guardar orden</button><button type="button" class="smallbtn secondary" data-layout-cancel>Salir</button><button type="button" class="smallbtn danger" data-layout-reset>Restaurar</button>':'<p>¿Quieres organizar esta pantalla a tu gusto?</p><button type="button" class="smallbtn secondary" data-layout-edit>Editar diseño</button>';
+ app.insertBefore(bar,app.firstChild);app.classList.toggle('layout-editing',layoutEditing);if(!layoutEditing)return;
+ let dragged=null;blocks.forEach(el=>{el.draggable=true;el.addEventListener('dragstart',e=>{dragged=el;el.classList.add('dragging');e.dataTransfer.effectAllowed='move'});el.addEventListener('dragend',()=>{el.classList.remove('dragging');dragged=null});el.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move'});el.addEventListener('drop',e=>{e.preventDefault();if(!dragged||dragged===el)return;const rect=el.getBoundingClientRect(),after=e.clientY>rect.top+rect.height/2;app.insertBefore(dragged,after?el.nextSibling:el)});});
+}
+function setupLayoutEditor(){
+ const app=document.getElementById('app'),bar=document.getElementById('layoutEditorToolbar');if(!app||!bar)return;
+ bar.querySelector('[data-layout-edit]')?.addEventListener('click',()=>{layoutEditing=true;applyLayoutEditor()});
+ bar.querySelector('[data-layout-cancel]')?.addEventListener('click',()=>{layoutEditing=false;render()});
+ bar.querySelector('[data-layout-save]')?.addEventListener('click',()=>{data.layoutOrder=data.layoutOrder||{};data.layoutOrder[tab]=[...app.querySelectorAll(':scope > .layout-block')].map(el=>el.dataset.layoutId);save();layoutEditing=false;render()});
+ bar.querySelector('[data-layout-reset]')?.addEventListener('click',()=>{if(!confirm('¿Restaurar el orden original de este apartado?'))return;if(data.layoutOrder)delete data.layoutOrder[tab];save();layoutEditing=false;render()});
+}
+
 function historyMarkup(filter,term=''){
 const norm=v=>String(v??'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[\u200B-\u200D\uFEFF]/g,'').toLowerCase().replace(/[\s\u00A0]+/g,'');
 const q=norm(term);
