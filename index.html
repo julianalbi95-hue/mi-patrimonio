@@ -339,7 +339,6 @@ function setupLayoutEditor(){
  bar.querySelector('[data-layout-cancel]')?.addEventListener('click',()=>{layoutEditing=false;render()});
  bar.querySelector('[data-layout-save]')?.addEventListener('click',()=>{data.layoutOrder=data.layoutOrder||{};data.layoutOrder[tab]=[...app.querySelectorAll(':scope > .layout-block')].map(el=>el.dataset.layoutId);save();layoutEditing=false;render()});
  bar.querySelector('[data-layout-add]')?.addEventListener('click',()=>{const sel=bar.querySelector('#addChartType'),type=sel?.value;if(!type){alert('Elige primero qué gráfica quieres añadir.');return}const names={accounts:'Saldos por cuenta', 'income-expenses':'Ingresos y gastos por mes',categories:'Gastos por categoría',goals:'Progreso de objetivos',groups:'Patrimonio personal y conjunto',expiries:'Próximos vencimientos'};data.customBlocks=data.customBlocks||{};data.customBlocks[tab]=data.customBlocks[tab]||[];data.customBlocks[tab].push({id:'chart-'+Date.now(),type,title:names[type]||'Mi gráfica'});save();render()});
- bar.querySelector('[data-layout-cancel]')?.addEventListener('click',()=>{layoutEditing=false;render()});
  bar.querySelector('[data-layout-reset]')?.addEventListener('click',()=>{if(!confirm('¿Restaurar los bloques originales de este apartado? Se mostrarán de nuevo y se quitarán las gráficas personalizadas de esta pestaña.'))return;if(data.layoutOrder)delete data.layoutOrder[tab];if(data.layoutHidden)delete data.layoutHidden[tab];if(data.customBlocks)delete data.customBlocks[tab];save();layoutEditing=false;render()});
 }
 
