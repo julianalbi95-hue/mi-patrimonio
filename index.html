@@ -26,7 +26,7 @@ input,select{width:100%;padding:12px;border:1px solid #d8e0dc;border-radius:11px
 </style>
 </head>
 <body>
-<header><div class="top"><div><h1>Mi Patrimonio</h1><small>Tu centro de control financiero</small></div><div style="display:flex;align-items:center;gap:10px"><small id="syncStatus" style="font-size:11px"></small><button id="logoutBtn" class="smallbtn secondary hidden" type="button">Salir</button>💶</div></div></header>
+<header><div class="top"><div><h1>Mi Patrimonio</h1><small>Tu centro de control financiero</small></div><div style="display:flex;align-items:center;gap:10px"><small id="syncStatus" style="font-size:11px"></small><button id="settingsBtn" class="smallbtn secondary hidden" type="button" aria-label="Configuración" title="Configuración">⚙️</button><button id="logoutBtn" class="smallbtn secondary hidden" type="button">Salir</button>💶</div></div></header>
 <main id="app"></main>
 <nav>
 <button data-tab="home" class="active"><span>⌂</span>Inicio</button>
@@ -170,6 +170,25 @@ app.innerHTML='<section class="panel"><h2>Mis objetivos de ahorro</h2>'+data.goa
 '<section class="panel"><h2>Crear objetivo</h2><form id="goalForm"><label>Nombre</label><input name="name" required><label>Importe objetivo (€)</label><input name="target" type="number" min="1" required><label>Ahorrado actualmente (€)</label><input name="current" type="number" min="0" value="0"><button style="width:100%">Crear objetivo</button></form></section>';
 document.getElementById('goalForm').onsubmit=e=>{e.preventDefault();let f=new FormData(e.target);data.goals.push({id:Date.now(),name:f.get('name'),target:Number(f.get('target')),current:Number(f.get('current'))||0});save();render()};
 document.querySelectorAll('[data-goal-edit]').forEach(b=>b.onclick=()=>{let g=data.goals.find(x=>x.id===Number(b.dataset.goalEdit)),n=prompt('Nombre',g.name),t=prompt('Objetivo en euros',g.target),c=prompt('Cantidad acumulada',g.current);if(n===null||t===null||c===null)return;g.name=n;g.target=Number(t)||g.target;g.current=Number(c)||0;save();render()});
+}else if(tab==='settings'){
+const email=authSession?.user?.email||'No disponible';
+const synced=cloudReady?'Conectado y sincronizado':'Sin conexión confirmada';
+app.innerHTML='<section class="panel"><h2>Mi cuenta</h2><div class="row"><div><strong>Correo electrónico</strong><small>'+esc(email)+'</small></div><span class="tag">Activa</span></div><p class="note" style="margin-top:12px">Esta es la cuenta con la que accedes a Mi Patrimonio.</p></section>'+
+'<section class="panel"><h2>Cambiar contraseña</h2><p class="note">Elige una contraseña nueva. Te recomendamos que sea larga y que no la utilices en otros servicios.</p><form id="passwordForm"><label>Nueva contraseña</label><input name="password" type="password" autocomplete="new-password" minlength="8" required placeholder="Mínimo 8 caracteres"><label>Repite la nueva contraseña</label><input name="confirmPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="Vuelve a escribirla"><button id="passwordSave" style="width:100%">Actualizar contraseña</button><p id="passwordMessage" class="note" aria-live="polite"></p></form></section>'+
+'<section class="panel"><h2>Sincronización</h2><div class="row"><div><strong>Estado de conexión</strong><small>Tus datos se guardan en Supabase y se comparten entre tus dispositivos.</small></div><span class="tag">'+synced+'</span></div><p class="note">Si realizas cambios, espera a que arriba aparezca «Sincronizado» antes de cerrar la aplicación.</p></section>'+
+'<section class="panel"><h2>Copias de seguridad</h2><p class="note">Puedes consultar las versiones guardadas automáticamente y descargar una copia manual de tus datos.</p><button id="settingsBackups" class="secondary" style="width:100%">Gestionar copias de seguridad</button></section>';
+document.getElementById('passwordForm').onsubmit=async e=>{
+e.preventDefault();const f=new FormData(e.target),password=String(f.get('password')||''),confirmation=String(f.get('confirmPassword')||''),btn=document.getElementById('passwordSave'),msg=document.getElementById('passwordMessage');
+if(password.length<8){msg.textContent='La contraseña debe tener al menos 8 caracteres.';return}
+if(password!==confirmation){msg.textContent='Las contraseñas no coinciden.';return}
+btn.disabled=true;btn.textContent='Actualizando...';msg.textContent='';
+try{const {error}=await supabaseClient.auth.updateUser({password});if(error)throw error;e.target.reset();msg.textContent='Contraseña actualizada correctamente.'}
+catch(err){msg.textContent='No se ha podido actualizar la contraseña: '+err.message}
+finally{btn.disabled=false;btn.textContent='Actualizar contraseña'}
+};
+document.getElementById('settingsBackups').onclick=()=>{
+tab='stats';render();document.getElementById('loadBackups')?.click();document.getElementById('backupList')?.scrollIntoView({behavior:'smooth',block:'center'});
+};
 }else{
 const s=sums(statsGroup),sp=sums('personal'),sc=sums('conjunta'),moves=monthMoves(statsGroup),cats=categoryStats(moves),max=Math.max(1,...cats.map(x=>x[1]));
 const colors=['#3985d6','#16a085','#e5a13b','#9b79c9','#d66b6b','#5c9d91','#778899'];
@@ -219,6 +238,7 @@ document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{tab=b.dataset.
 function showLogin(message=''){
  document.querySelector('nav').classList.add('hidden');
  document.getElementById('logoutBtn')?.classList.add('hidden');
+  document.getElementById('settingsBtn')?.classList.add('hidden');
  document.getElementById('app').innerHTML='<section class="panel" style="max-width:420px;margin:30px auto"><h2>Entrar en Mi Patrimonio</h2><p class="note">Accede con el correo y la contraseña que has creado en Supabase.</p><form id="loginForm"><label>Correo electrónico</label><input name="email" type="email" autocomplete="username" required placeholder="tu correo"><label>Contraseña</label><input name="password" type="password" autocomplete="current-password" required placeholder="Tu contraseña"><button id="loginBtn" style="width:100%">Iniciar sesión</button><p id="loginMessage" class="note" style="margin-top:12px">'+esc(message)+'</p></form></section>';
  document.getElementById('loginForm').onsubmit=async e=>{
   e.preventDefault();const f=new FormData(e.target),btn=document.getElementById('loginBtn'),msg=document.getElementById('loginMessage');btn.disabled=true;btn.textContent='Entrando...';msg.textContent='';
@@ -240,6 +260,7 @@ async function loadUserData(session){
  cloudReady=true;
  document.querySelector('nav').classList.remove('hidden');
  document.getElementById('logoutBtn')?.classList.remove('hidden');
+  document.getElementById('settingsBtn')?.classList.remove('hidden');
  if(status)status.textContent='Sincronizado';
  processDueSubscriptions();save();render();
 }
@@ -254,6 +275,7 @@ async function startApp(){
   if(event==='SIGNED_OUT'){authSession=null;cloudReady=false;showLogin('Has cerrado sesión.');}
  });
 }
+document.getElementById('settingsBtn')?.addEventListener('click',()=>{tab='settings';render();});
 document.getElementById('logoutBtn')?.addEventListener('click',()=>supabaseClient?.auth.signOut());
 startApp();
 if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js?v=8').catch(()=>{});
