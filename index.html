@@ -237,8 +237,8 @@ document.getElementById('loadBackups').onclick=async()=>{
 document.querySelectorAll('[data-goal-delete]').forEach(b=>b.onclick=()=>{if(confirm('¿Eliminar objetivo?')){data.goals=data.goals.filter(g=>g.id!==Number(b.dataset.goalDelete));save();render()}});
 }
 function historyMarkup(filter,term=''){
-const norm=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-const q=norm(term).trim();
+const norm=v=>String(v??'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[\u200B-\u200D\uFEFF]/g,'').toLowerCase().replace(/[\s\u00A0]+/g,'');
+const q=norm(term);
 const list=data.moves.slice().reverse().filter(m=>{
  if(filter!=='all'&&(m.group||'personal')!==filter)return false;
  if(!q)return true;
