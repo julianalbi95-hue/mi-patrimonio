@@ -153,7 +153,7 @@ document.querySelectorAll('[data-goal-edit]').forEach(b=>b.onclick=()=>{let g=da
 }else if(tab==='settings'){
 const email=authSession?.user?.email||'No disponible';
 const synced=cloudReady?'Conectado y sincronizado':'Sin conexión confirmada';
-app.innerHTML='<section class="panel"><h2>Mis cuentas</h2><p class="note">Administra aquí tus cuentas personales y conjuntas. Puedes añadir nuevas o eliminar las que ya no necesites. Para eliminar, selecciona primero una cuenta.</p><div class="actionrow"><button type="button" id="addAccountBtn">＋ Añadir cuenta</button><button type="button" id="deleteAccountBtn" class="danger">− Eliminar cuenta</button></div>'+data.accounts.map(a=>'<div class="row"><label style="display:flex;align-items:center;gap:9px;flex:1;cursor:pointer"><input type="radio" name="accountToDelete" value="'+a.id+'" style="width:auto;margin:0"><span><strong>'+esc(a.name)+'</strong><small>'+esc(a.type)+' · '+groupName(a.group)+'</small></span></label><div style="width:112px"><input aria-label="Saldo '+esc(a.name)+'" type="number" step=".01" data-balance="'+a.id+'" value="'+a.balance+'" style="margin:0"></div></div>').join('')+'</section>'+
+app.innerHTML='<section class="panel"><h2>Mis cuentas</h2><p class="note" id="accountManageNote">Administra aquí tus cuentas personales y conjuntas. Puedes añadir nuevas o eliminar las que ya no necesites.</p><div class="actionrow"><button type="button" id="addAccountBtn">＋ Añadir cuenta</button><button type="button" id="deleteAccountBtn" class="danger">− Eliminar cuenta</button><button type="button" id="cancelDeleteMode" class="secondary hidden">Cancelar</button></div>'+data.accounts.map(a=>'<div class="row"><label style="display:flex;align-items:center;gap:9px;flex:1;cursor:pointer"><input class="account-delete-radio hidden" type="radio" name="accountToDelete" value="'+a.id+'" style="width:auto;margin:0"><span><strong>'+esc(a.name)+'</strong><small>'+esc(a.type)+' · '+groupName(a.group)+'</small></span></label><div style="width:112px"><input aria-label="Saldo '+esc(a.name)+'" type="number" step=".01" data-balance="'+a.id+'" value="'+a.balance+'" style="margin:0"></div></div>').join('')+'</section>'+
 '<div class="modalback hidden" id="addAccountModal"><section class="modalcard"><div class="modalhead"><h2>Añadir cuenta</h2><button type="button" class="modalclose" id="closeAddAccount">✕</button></div><form id="accountForm"><label>Nombre</label><input name="name" placeholder="Ej. Cuenta nómina" required><label>Tipo</label><select name="type"><option>Cuenta</option><option>Ahorro</option><option>Inversión</option><option>Deuda</option></select><label>Grupo</label><select name="group"><option value="personal">Personal</option><option value="conjunta">Conjunta</option></select><label>Saldo actual (€)</label><input name="balance" type="number" step=".01" value="0"><button style="width:100%">Guardar cuenta</button></form></section></div>'+
 '<section class="panel"><h2>Suscripciones activas</h2><p class="note">Las suscripciones se añaden desde «Añadir gasto» en Inicio. Aquí puedes consultar o cancelar las que ya tienes.</p>'+(data.subscriptions.filter(s=>s.active!==false).map(s=>'<div class="row"><div style="flex:1"><strong>'+esc(s.name)+'</strong><small>'+eur(s.amount)+' al mes · Próximo cobro: '+esc(s.nextDate||'Sin fecha')+'</small></div><button class="smallbtn danger" data-sub-cancel="'+s.id+'">Cancelar</button></div>').join('')||'<div class="empty">No tienes suscripciones activas.</div>')+'</section>'+
 '<section class="panel"><h2>Mi cuenta</h2><div class="row"><div><strong>Correo electrónico</strong><small>'+esc(email)+'</small></div><span class="tag">Activa</span></div><p class="note" style="margin-top:12px">Esta es la cuenta con la que accedes a Mi Patrimonio.</p></section>'+
@@ -165,8 +165,19 @@ const addAccountModal=document.getElementById('addAccountModal');
 document.getElementById('addAccountBtn').onclick=()=>addAccountModal.classList.remove('hidden');
 document.getElementById('closeAddAccount').onclick=()=>addAccountModal.classList.add('hidden');
 addAccountModal.addEventListener('click',e=>{if(e.target===addAccountModal)addAccountModal.classList.add('hidden')});
-document.getElementById('deleteAccountBtn').onclick=()=>{
- if(data.accounts.length<=1){alert('Necesitas mantener al menos una cuenta.');return;}
+let deleteMode=false;
+const deleteButton=document.getElementById('deleteAccountBtn');
+const cancelDeleteButton=document.getElementById('cancelDeleteMode');
+const deleteRadios=document.querySelectorAll('.account-delete-radio');
+const manageNote=document.getElementById('accountManageNote');
+function closeDeleteMode(){deleteMode=false;deleteRadios.forEach(r=>{r.classList.add('hidden');r.checked=false});cancelDeleteButton.classList.add('hidden');deleteButton.textContent='− Eliminar cuenta';manageNote.textContent='Administra aquí tus cuentas personales y conjuntas. Puedes añadir nuevas o eliminar las que ya no necesites.'}
+deleteButton.onclick=()=>{
+ if(!deleteMode){
+  if(data.accounts.length<=1){alert('Necesitas mantener al menos una cuenta.');return;}
+  deleteMode=true;deleteRadios.forEach(r=>r.classList.remove('hidden'));cancelDeleteButton.classList.remove('hidden');
+  manageNote.textContent='Selecciona la cuenta que quieres eliminar y vuelve a pulsar «Eliminar cuenta».';
+  return;
+ }
  const selected=document.querySelector('input[name="accountToDelete"]:checked');
  if(!selected){alert('Selecciona primero la cuenta que quieres eliminar.');return;}
  const account=data.accounts.find(a=>Number(a.id)===Number(selected.value));
@@ -179,6 +190,7 @@ document.getElementById('deleteAccountBtn').onclick=()=>{
  data.accounts=data.accounts.filter(a=>Number(a.id)!==Number(account.id));
  save();render();
 };
+cancelDeleteButton.onclick=closeDeleteMode;
 document.getElementById('accountForm').onsubmit=e=>{e.preventDefault();const f=new FormData(e.target);data.accounts.push({id:Date.now(),name:f.get('name').trim(),type:f.get('type'),group:f.get('group'),balance:Number(f.get('balance'))||0});save();render()};
 document.querySelectorAll('[data-sub-cancel]').forEach(b=>b.onclick=()=>{const s=data.subscriptions.find(x=>x.id===Number(b.dataset.subCancel));if(s&&confirm('¿Cancelar '+s.name+'? No se generarán más cargos automáticos.')){s.active=false;save();render()}});
 document.getElementById('passwordForm').onsubmit=async e=>{
