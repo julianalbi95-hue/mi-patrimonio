@@ -422,7 +422,7 @@ const rows=shown.map(m=>{
 const more=!q&&list.length>10?'<div style="text-align:center;padding-top:12px"><button type="button" class="smallbtn secondary" id="toggleMoreMoves">'+(expanded?'Ver menos':'Ver más ('+ (list.length-10) +' restantes)')+'</button></div>':'';
 return (rows||'<div class="empty">'+(q?'No se han encontrado movimientos.':'No hay movimientos en esta cuenta.')+'</div>')+more;
 }
-function wireHistory(){document.querySelectorAll('[data-delete-move]').forEach(b=>b.onclick=()=>{const m=data.moves.find(x=>x.id===Number(b.dataset.deleteMove));if(!m||!confirm('¿Borrar este movimiento? El saldo de la cuenta no se modificará automáticamente.'))return;data.moves=data.moves.filter(x=>x.id!==m.id);save();render()})}
+function wireHistory(){document.querySelectorAll('[data-delete-move]').forEach(b=>b.onclick=()=>{const m=data.moves.find(x=>x.id===Number(b.dataset.deleteMove));if(!m||!confirm('¿Borrar este movimiento? También se corregirá el saldo de la cuenta asociada.'))return;const account=data.accounts.find(a=>Number(a.id)===Number(m.account));if(account){const amount=Number(m.amount)||0;if(m.kind==='Gasto')account.balance=Number(account.balance||0)+amount;else if(m.kind==='Ingreso')account.balance=Number(account.balance||0)-amount;}data.moves=data.moves.filter(x=>x.id!==m.id);save();render()})}
 function openMovementModal(kind){
 const accounts=data.accounts;
 const modal=document.createElement('div');modal.className='modalback';modal.id='movementModal';
@@ -514,6 +514,6 @@ async function startApp(){
 document.getElementById('settingsBtn')?.addEventListener('click',()=>{tab='settings';render();});
 document.getElementById('logoutBtn')?.addEventListener('click',()=>supabaseClient?.auth.signOut());
 startApp();
-if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js?v=30').catch(()=>{});
+if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js?v=31').catch(()=>{});
 </script>
 </body></html>
