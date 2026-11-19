@@ -152,6 +152,33 @@ function walletMarkup(){
 }
 function investmentAccount(){return data.accounts.find(a=>a.type==='Inversión')}
 function investmentAssets(){const a=investmentAccount();return Array.isArray(a?.assets)?a.assets:[]}
+async function refreshInvestmentPrices(){
+ if(!authSession||!cloudReady)return false;
+ const supported=new Set(['US02079K1079','LU1681048804','US67066G1040','US8740541094','US35834F1049']);
+ const assets=investmentAssets().filter(x=>supported.has(String(x.ticker||'').trim().toUpperCase()));
+ if(!assets.length)return false;
+ try{
+  const response=await fetch('./prices.json?refresh='+Date.now(),{cache:'no-store'});
+  if(!response.ok)throw new Error('No se ha podido leer el fichero de cotizaciones.');
+  const feed=await response.json(),fx=Number(feed.eurUsd);
+  let changed=false;
+  assets.forEach(x=>{
+   const isin=String(x.ticker||'').trim().toUpperCase(),quote=feed.assets?.[isin];
+   if(!quote)return;
+   const quantity=Number(x.quantity),price=Number(quote.price),currency=String(quote.currency||'').toUpperCase();
+   if(!Number.isFinite(quantity)||quantity<=0||!Number.isFinite(price)||price<=0)return;
+   let value=quantity*price;
+   if(currency==='USD'){if(!Number.isFinite(fx)||fx<=0)return;value=value/fx}
+   else if(currency!=='EUR')return;
+   value=Math.round(value*100)/100;
+   if(Math.abs((Number(x.value)||0)-value)>=0.01||x.priceDate!==quote.date||x.marketPrice!==price||x.priceCurrency!==currency){
+    x.value=value;x.priceDate=quote.date||null;x.marketPrice=price;x.priceCurrency=currency;changed=true;
+   }
+  });
+  if(changed){const inv=investmentAccount();if(inv)inv.balance=investmentAssets().reduce((n,x)=>n+(Number(x.value)||0),0);save()}
+  return changed;
+ }catch(error){console.warn('No se pudieron actualizar las inversiones:',error);return false}
+}
 function investmentValue(){return investmentAssets().reduce((n,x)=>n+(Number(x.value)||0),0)}
 function homeChartsMarkup(){
  const months=[];const cursor=new Date();cursor.setDate(1);
@@ -517,6 +544,7 @@ async function loadUserData(session){
   if(insertError){showLogin('No se ha podido guardar la primera copia: '+insertError.message);return;}
  }
  cloudReady=true;
+ await refreshInvestmentPrices();
  document.querySelector('nav').classList.remove('hidden');
  document.getElementById('logoutBtn')?.classList.remove('hidden');
   document.getElementById('settingsBtn')?.classList.remove('hidden');
@@ -537,6 +565,6 @@ async function startApp(){
 document.getElementById('settingsBtn')?.addEventListener('click',()=>{tab='settings';render();});
 document.getElementById('logoutBtn')?.addEventListener('click',()=>supabaseClient?.auth.signOut());
 startApp();
-if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js?v=34').catch(()=>{});
+if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js?v=35').catch(()=>{});
 </script>
 </body></html>
