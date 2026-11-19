@@ -11,7 +11,8 @@ from datetime import datetime, timezone
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUTPUT = os.path.join(ROOT, "prices.json")
 SUPABASE_URL = "https://ulheujreaunsahulnxeb.supabase.co"
-SUPABASE_KEY = "sb_publishable_H1O0sr2bstyoFTcM6XAcQA_EYW5lE31"
+SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+PUBLIC_ISINS_OUTPUT = os.path.join(ROOT, "investments.json")
 STATIC = {
     "US02079K1079": ("GOOG", "USD"),
     "LU1681048804": ("500.PA", "EUR"),
@@ -46,10 +47,21 @@ def get_json(url):
 
 
 def public_isins():
+    if not SUPABASE_SERVICE_ROLE_KEY:
+        print("Aviso: falta el secreto SUPABASE_SERVICE_ROLE_KEY; se mantienen los cinco ISIN iniciales.")
+        return sorted(STATIC)
     url = SUPABASE_URL + "/rest/v1/public_investment_isins?select=isin"
-    raw = request(url, headers={"apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY})
+    raw = request(url, headers={
+        "apikey": SUPABASE_SERVICE_ROLE_KEY,
+        "Authorization": "Bearer " + SUPABASE_SERVICE_ROLE_KEY,
+    })
     rows = json.loads(raw.decode("utf-8"))
-    return sorted({str(row.get("isin", "")).strip().upper() for row in rows if row.get("isin")})
+    values = sorted({str(row.get("isin", "")).strip().upper() for row in rows
+                     if row.get("isin") and len(str(row.get("isin", "")).strip()) == 12})
+    with open(PUBLIC_ISINS_OUTPUT, "w", encoding="utf-8") as handle:
+        json.dump({"isins": values}, handle, ensure_ascii=False, indent=2)
+        handle.write("\\n")
+    return values
 
 
 def map_isins(isins):
