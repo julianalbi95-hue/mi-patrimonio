@@ -133,14 +133,10 @@ return Object.entries(map).sort((a,b)=>b[1]-a[1]);
 }
 
 function walletMarkup(){
- const accounts=data.accounts.filter(a=>a.group==='personal'&&a.type==='Cuenta'&&/imaginbank/i.test(a.name||''));
- if(!accounts.length)return '<section class="panel"><h2>Mi monedero personal</h2><p class="note">No encuentro la cuenta «imaginBank · Personal». Comprueba que siga existiendo en Ajustes y que esté configurada como cuenta personal.</p></section>';
- const selected=accounts[0],tracker=data.walletTracker||{},month=currentMonth(),active=tracker.month===month&&Number.isFinite(Number(tracker.amount));
- const spent=active?data.moves.filter(m=>Number(m.account)===Number(selected.id)&&m.kind==='Gasto'&&m.month===month&&Number(m.createdAt)>=Number(tracker.startedAt)).reduce((n,m)=>n+Number(m.amount||0),0):0;
- const remaining=active?Number(tracker.amount)-spent:0,percent=active&&Number(tracker.amount)>0?Math.max(0,Math.min(100,remaining/Number(tracker.amount)*100)):0;
- const accountSelect='<input type="hidden" name="accountId" value="'+selected.id+'"><div class="note" style="margin-top:8px">Vinculado a: <strong>'+esc(selected.name)+'</strong></div>';
- const progress=active?'<div style="display:flex;justify-content:space-between;align-items:end;gap:8px;margin-top:14px"><div><small class="muted">Te queda</small><div class="big" style="font-size:28px;color:'+(remaining<0?'#d76b6b':'var(--green)')+'">'+eur(remaining)+'</div></div><div style="text-align:right"><small class="muted">Saldo inicial</small><strong style="display:block">'+eur(tracker.amount)+'</strong></div></div><div style="height:16px;background:var(--line);border-radius:20px;overflow:hidden;margin:12px 0 7px"><div style="height:100%;width:'+percent+'%;background:'+(percent<20?'#d76b6b':'#26966b')+';border-radius:20px;transition:width .25s"></div></div><div class="row"><small class="muted">Gastado: '+eur(spent)+' ('+(Number(tracker.amount)>0?(spent/Number(tracker.amount)*100).toFixed(1).replace('.',','):'0')+' %)</small><small class="muted">'+(remaining<0?'Saldo superado':'Disponible: '+percent.toFixed(1).replace('.',',')+' %')+'</small></div>':'<p class="note" style="margin-top:12px">'+(tracker.month&&tracker.month!==month?'Ha empezado un nuevo mes. Introduce el dinero que tienes ahora para iniciar el seguimiento.':'Introduce cuánto dinero tienes ahora en esta cuenta. A partir de ese momento, cada gasto que registres desde ella irá descontándose hasta final de mes.')+'</p>';
- return '<section class="panel"><h2>👛 Mi monedero personal</h2><p class="chart-subtitle">Seguimiento de tus gastos hasta final de mes.</p>'+progress+'<form id="walletForm" style="margin-top:14px">'+accountSelect+'<label style="display:block;margin:8px 0 5px">'+(active?'Actualizar dinero disponible (€)':'Dinero que tienes ahora (€)')+'</label><input name="amount" type="number" min="0.01" step="0.01" required placeholder="Ej. 400" style="width:100%"><button type="submit" style="margin-top:10px;width:100%">'+(active?'Actualizar monedero':'Iniciar seguimiento')+'</button></form></section>';
+ const account=data.accounts.find(a=>a.group==='personal'&&a.type==='Cuenta'&&/imaginbank/i.test(a.name||''));
+ if(!account)return '<section class="panel"><h2>👛 Mi monedero personal</h2><p class="note">No encuentro la cuenta «imaginBank · Personal». Comprueba que siga existiendo en Ajustes y que esté configurada como cuenta personal.</p></section>';
+ const balance=Number(account.balance)||0;
+ return '<section class="panel"><h2>👛 Mi monedero personal</h2><p class="chart-subtitle">Tu dinero disponible en imaginBank · Personal.</p><div style="margin-top:14px"><small class="muted">Saldo disponible ahora</small><div class="big" style="font-size:32px;color:'+(balance<0?'#d76b6b':'var(--green)')+'">'+eur(balance)+'</div></div><div class="note" style="margin-top:10px">Este importe es el mismo saldo que figura en Ajustes para tu cuenta imaginBank · Personal. Se actualiza automáticamente al registrar gastos e ingresos desde esa cuenta, sin introducir cantidades ni descontar movimientos dos veces.</div></section>';
 }
 function investmentAccount(){return data.accounts.find(a=>a.type==='Inversión')}
 function investmentAssets(){const a=investmentAccount();return Array.isArray(a?.assets)?a.assets:[]}
@@ -452,11 +448,6 @@ document.addEventListener('click',e=>{
  if(closeDelete){document.getElementById('deleteGoalModal')?.classList.add('hidden');return}
 });
 document.addEventListener('submit',e=>{
- if(e.target.id==='walletForm'){
-  e.preventDefault();const f=new FormData(e.target),accountId=Number(f.get('accountId')),amount=Number(f.get('amount')),account=data.accounts.find(a=>Number(a.id)===accountId&&a.group==='personal'&&a.type==='Cuenta');
-  if(!account||!Number.isFinite(amount)||amount<=0){alert('Comprueba la cuenta y el importe.');return}
-  data.walletTracker={accountId:account.id,amount,startedAt:Date.now(),month:currentMonth()};save();render();return;
- }
  if(e.target.id==='goalForm'){
   e.preventDefault();const f=new FormData(e.target);
   const name=String(f.get('name')||'').trim(),target=Number(f.get('target')),current=Number(f.get('current')||0);
@@ -512,6 +503,6 @@ async function startApp(){
 document.getElementById('settingsBtn')?.addEventListener('click',()=>{tab='settings';render();});
 document.getElementById('logoutBtn')?.addEventListener('click',()=>supabaseClient?.auth.signOut());
 startApp();
-if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js?v=27').catch(()=>{});
+if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js?v=28').catch(()=>{});
 </script>
 </body></html>
