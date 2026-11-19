@@ -429,8 +429,7 @@ function wireHistory(){
   const m=data.moves[moveIndex],account=data.accounts.find(a=>Number(a.id)===Number(m.account)),amount=Number(m.amount);
   if((m.kind==='Gasto'||m.kind==='Ingreso')&&!account){alert('No encuentro la cuenta asociada a este movimiento. No se ha borrado ni modificado nada.');return;}
   if(!Number.isFinite(amount)||amount<0){alert('El importe de este movimiento no es válido. No se ha borrado ni modificado nada.');return;}
-  const effect=m.kind==='Gasto'?'Se devolverán '+eur(amount)+' al saldo de la cuenta.':m.kind==='Ingreso'?'Se descontarán '+eur(amount)+' del saldo de la cuenta.':'El saldo de la cuenta no cambiará.';
-  if(!confirm('¿Borrar este movimiento?\\n\\n'+effect+' La cuenta volverá al saldo que tenía antes de registrarlo.'))return;
+
   if(account&&m.kind==='Gasto')account.balance=Number(account.balance||0)+amount;
   else if(account&&m.kind==='Ingreso')account.balance=Number(account.balance||0)-amount;
   data.moves.splice(moveIndex,1);
@@ -528,6 +527,6 @@ async function startApp(){
 document.getElementById('settingsBtn')?.addEventListener('click',()=>{tab='settings';render();});
 document.getElementById('logoutBtn')?.addEventListener('click',()=>supabaseClient?.auth.signOut());
 startApp();
-if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js?v=32').catch(()=>{});
+if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js?v=33').catch(()=>{});
 </script>
 </body></html>
