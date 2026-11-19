@@ -60,7 +60,7 @@ def public_isins():
                      if row.get("isin") and len(str(row.get("isin", "")).strip()) == 12})
     with open(PUBLIC_ISINS_OUTPUT, "w", encoding="utf-8") as handle:
         json.dump({"isins": values}, handle, ensure_ascii=False, indent=2)
-        handle.write("\\n")
+        handle.write("\n")
     return values
 
 
