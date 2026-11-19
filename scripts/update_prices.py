@@ -47,7 +47,8 @@ def ecb_usd_rate():
         root = ET.fromstring(response.read())
     for cube in root.iter():
         if cube.attrib.get("currency") == "USD":
-            return float(cube.attrib["rate"]), datetime.now(timezone.utc).date().isoformat()
+            rate_date = next((node.attrib["time"] for node in root.iter() if "time" in node.attrib), datetime.now(timezone.utc).date().isoformat())
+            return float(cube.attrib["rate"]), rate_date
     raise ValueError("No se ha encontrado el cambio EUR/USD del BCE")
 
 
