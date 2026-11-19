@@ -2,6 +2,7 @@
 """Actualiza una caché pública de precios diarios para Mi Patrimonio."""
 import json
 import os
+import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
@@ -94,5 +95,4 @@ def main():
 
 
 if __name__ == "__main__":
-    import urllib.parse
     main()
